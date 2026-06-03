@@ -1,7 +1,11 @@
+import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 
-DATABASE_URL = "postgresql://opensource@localhost/opensourcemate"
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    "postgresql://opensource@localhost/opensourcemate",
+)
 
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(bind=engine)
