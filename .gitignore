@@ -1,0 +1,35 @@
+# ---------- macOS / Editors ----------
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# ---------- Python / Backend ----------
+backend/venv/
+backend/.venv/
+backend/__pycache__/
+backend/**/__pycache__/
+backend/*.pyc
+backend/*.pyo
+backend/*.db
+backend/.env
+
+# ---------- Node / Frontend ----------
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/build/
+frontend/.env
+frontend/.env.local
+frontend/.env.*.local
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+
+# ---------- Distributable artefacts ----------
+opensource.zip
+*.zip
+
+# ---------- Misc ----------
+*.log
+.cache/

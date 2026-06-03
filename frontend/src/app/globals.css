@@ -1,0 +1,70 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --color-background: #0c0a09;
+  --color-surface: #161311;
+  --color-border: #26201d;
+  /* Claude orange palette (kept under "crimson" token names so all existing classes remap automatically) */
+  --color-crimson: #D97757;
+  --color-crimson-dark: #B8593B;
+  --color-crimson-light: #EA9978;
+  --color-crimson-muted: rgba(217, 119, 87, 0.13);
+
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+
+  --radius-lg: 0.75rem;
+  --radius-md: calc(0.75rem - 2px);
+  --radius-sm: calc(0.75rem - 4px);
+
+  --color-card: #161311;
+  --color-card-foreground: #faf9f7;
+  --color-popover: #161311;
+  --color-popover-foreground: #faf9f7;
+  --color-primary: #D97757;
+  --color-primary-foreground: #faf9f7;
+  --color-secondary: #1d1916;
+  --color-secondary-foreground: #faf9f7;
+  --color-muted: #211c19;
+  --color-muted-foreground: #a39990;
+  --color-accent: #D97757;
+  --color-accent-foreground: #faf9f7;
+  --color-destructive: #ef4444;
+  --color-input: #1d1916;
+  --color-ring: #D97757;
+  --color-foreground: #faf9f7;
+}
+
+* {
+  border-color: var(--color-border);
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  -webkit-font-smoothing: antialiased;
+}
+
+.glow-crimson {
+  box-shadow: 0 0 32px rgba(217, 119, 87, 0.28), 0 0 80px rgba(217, 119, 87, 0.08);
+}
+
+.text-glow {
+  text-shadow: 0 0 24px rgba(217, 119, 87, 0.55);
+}
+
+.grid-bg {
+  background-image:
+    linear-gradient(rgba(217, 119, 87, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(217, 119, 87, 0.045) 1px, transparent 1px);
+  background-size: 44px 44px;
+  background-position: -1px -1px;
+}
+
+.radial-fade {
+  background: radial-gradient(ellipse 60% 50% at 50% 0%, rgba(217, 119, 87, 0.12), transparent 70%);
+}

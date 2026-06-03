@@ -1,0 +1,26 @@
+import enum
+from sqlalchemy import Column, Integer, String, Boolean, Enum, DateTime
+from sqlalchemy.sql import func
+from database import Base
+
+class UserType(str, enum.Enum):
+    freelancer = "Freelancer"
+    student = "Student"
+    enterprise = "Enterprise"
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String, unique=True, index=True, nullable=False)
+    password = Column(String, nullable=False)
+
+    # onboarding fields
+    name = Column(String, nullable=True)
+    mobile = Column(String, nullable=True)
+    user_type = Column(Enum(UserType), nullable=True)
+    website = Column(String, nullable=True)
+    linkedin = Column(String, nullable=True)
+    onboarding_completed = Column(Boolean, default=False)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
