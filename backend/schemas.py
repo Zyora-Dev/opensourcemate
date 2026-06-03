@@ -1,5 +1,6 @@
 from pydantic import BaseModel, EmailStr
-from typing import Optional
+from typing import Optional, List
+from datetime import datetime
 from models import UserType
 
 class RegisterRequest(BaseModel):
@@ -48,3 +49,52 @@ class ProfileUpdateRequest(BaseModel):
     linkedin: Optional[str] = None
     bio: Optional[str] = None
     location: Optional[str] = None
+
+
+class AnalyzeRequest(BaseModel):
+    issue_url: Optional[str] = None
+    repo_url: Optional[str] = None
+    error_log: Optional[str] = None
+    merge_conflict: Optional[str] = None
+
+
+class AnalysisResponse(BaseModel):
+    id: int
+    user_id: int
+    issue_url: Optional[str] = None
+    repo_url: Optional[str] = None
+    error_log: Optional[str] = None
+    merge_conflict: Optional[str] = None
+    issue_title: Optional[str] = None
+    issue_body: Optional[str] = None
+    repo_name: Optional[str] = None
+    repo_language: Optional[str] = None
+    summary: Optional[str] = None
+    difficulty: Optional[str] = None
+    files_involved: Optional[str] = None
+    tech_stack: Optional[str] = None
+    root_cause: Optional[str] = None
+    solution_steps: Optional[str] = None
+    git_commands: Optional[str] = None
+    pr_title: Optional[str] = None
+    pr_description: Optional[str] = None
+    status: str
+    error_message: Optional[str] = None
+    model_used: Optional[str] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class AnalysisListItem(BaseModel):
+    id: int
+    issue_url: Optional[str]
+    repo_name: Optional[str]
+    summary: Optional[str]
+    difficulty: Optional[str]
+    status: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True

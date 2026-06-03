@@ -1,5 +1,6 @@
 import enum
-from sqlalchemy import Column, Integer, String, Boolean, Enum, DateTime
+from sqlalchemy import Column, Integer, String, Boolean, Enum, DateTime, ForeignKey, Text
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from database import Base
 
@@ -36,3 +37,41 @@ class User(Base):
     github_connected_at = Column(DateTime(timezone=True), nullable=True)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class Analysis(Base):
+    __tablename__ = "analyses"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+
+    # what the user pasted
+    issue_url = Column(String, nullable=True)
+    repo_url = Column(String, nullable=True)
+    error_log = Column(Text, nullable=True)
+    merge_conflict = Column(Text, nullable=True)
+
+    # captured GitHub context (denormalised JSON-as-text for simplicity)
+    issue_title = Column(String, nullable=True)
+    issue_body = Column(Text, nullable=True)
+    repo_name = Column(String, nullable=True)
+    repo_language = Column(String, nullable=True)
+
+    # AI output
+    summary = Column(Text, nullable=True)
+    difficulty = Column(String, nullable=True)         # easy | medium | hard
+    files_involved = Column(Text, nullable=True)       # newline-separated
+    tech_stack = Column(Text, nullable=True)           # comma-separated
+    root_cause = Column(Text, nullable=True)
+    solution_steps = Column(Text, nullable=True)       # markdown
+    git_commands = Column(Text, nullable=True)         # newline-separated shell
+    pr_title = Column(String, nullable=True)
+    pr_description = Column(Text, nullable=True)
+
+    status = Column(String, default="pending")         # pending | done | error
+    error_message = Column(String, nullable=True)
+    model_used = Column(String, nullable=True)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    user = relationship("User")

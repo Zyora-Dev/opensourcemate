@@ -15,7 +15,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from database import Base, engine
-from routes import auth_routes, onboarding_routes, dashboard_routes, github_routes, profile_routes
+from routes import auth_routes, onboarding_routes, dashboard_routes, github_routes, profile_routes, analyze_routes
 
 Base.metadata.create_all(bind=engine)
 
@@ -37,6 +37,7 @@ app.include_router(onboarding_routes.router)
 app.include_router(dashboard_routes.router)
 app.include_router(github_routes.router)
 app.include_router(profile_routes.router)
+app.include_router(analyze_routes.router)
 
 # Serve user-uploaded files (avatars, etc.)
 from pathlib import Path as _Path

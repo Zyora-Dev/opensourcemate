@@ -84,6 +84,19 @@ export const api = {
     if (!res.ok) throw new Error("Delete failed");
     return res.json();
   },
+
+  // Analyze (Stage 2-5 AI flow)
+  analyze: (body: object, token: string) => req("/analyze/", body, token),
+  listAnalyses: (token: string) => getJson("/analyze/", token),
+  getAnalysis: (id: number, token: string) => getJson(`/analyze/${id}`, token),
+  deleteAnalysis: async (id: number, token: string) => {
+    const res = await fetch(`${API}/analyze/${id}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error("Delete failed");
+    return res.json();
+  },
 };
 
 // Helper to resolve avatar URLs returned by the API.

@@ -212,8 +212,11 @@ export default function DashboardPage() {
             <Badge className={`text-[11px] border ${typeColor[user.user_type] || "bg-muted text-muted-foreground border-border"}`}>
               {user.user_type || "Member"}
             </Badge>
-            <button className="inline-flex items-center gap-1.5 bg-crimson hover:bg-crimson-dark text-white text-sm px-4 h-9 rounded-lg font-medium transition-all glow-crimson">
-              <FiZap size={14} /> Find issues for me
+            <button
+              onClick={() => router.push("/analyze")}
+              className="inline-flex items-center gap-1.5 bg-crimson hover:bg-crimson-dark text-white text-sm px-4 h-9 rounded-lg font-medium transition-all glow-crimson"
+            >
+              <FiZap size={14} /> Analyze with AI
             </button>
           </div>
         </motion.div>
