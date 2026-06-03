@@ -110,33 +110,75 @@ Be concrete. Prefer code examples over hand-waving. Keep beginner-friendly tone.
 
 async def _call_llm(prompt: str) -> Dict[str, Any]:
     if not LLM_API_KEY:
-        raise HTTPException(503, "AI service not configured. Admin must set OPENAI_API_KEY in backend .env")
+        raise HTTPException(503, "AI service not configured. Admin must set OPENAI_API_KEY (or LLM_API_KEY) in backend .env")
 
-    async with httpx.AsyncClient(timeout=90.0) as client:
+    base_payload = {
+        "model": LLM_MODEL,
+        "messages": [
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": prompt + "\n\nRespond with valid JSON only — no markdown, no prose."},
+        ],
+        "temperature": 0.3,
+    }
+
+    async with httpx.AsyncClient(timeout=120.0) as client:
+        # First try with strict JSON mode (works on OpenAI, some CF models)
+        payload = {**base_payload, "response_format": {"type": "json_object"}}
         r = await client.post(
             f"{LLM_BASE_URL}/chat/completions",
             headers={
                 "Authorization": f"Bearer {LLM_API_KEY}",
                 "Content-Type": "application/json",
             },
-            json={
-                "model": LLM_MODEL,
-                "messages": [
-                    {"role": "system", "content": SYSTEM_PROMPT},
-                    {"role": "user", "content": prompt},
-                ],
-                "temperature": 0.3,
-                "response_format": {"type": "json_object"},
-            },
+            json=payload,
         )
+
+        # Some Cloudflare / Ollama models reject response_format → retry without it
+        if r.status_code in (400, 422):
+            log.info("response_format unsupported, retrying without it (provider=%s, model=%s)", LLM_PROVIDER, LLM_MODEL)
+            r = await client.post(
+                f"{LLM_BASE_URL}/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {LLM_API_KEY}",
+                    "Content-Type": "application/json",
+                },
+                json=base_payload,
+            )
+
         if r.status_code != 200:
             log.error("LLM error %s: %s", r.status_code, r.text[:500])
             raise HTTPException(502, f"AI service error ({r.status_code})")
+
         body = r.json()
-        content = body["choices"][0]["message"]["content"]
+
+        # Extract content — both OpenAI and Cloudflare OpenAI-compat shape
         try:
-            return json.loads(content)
+            content = body["choices"][0]["message"]["content"]
+        except (KeyError, IndexError, TypeError):
+            # Cloudflare native shape (non-OpenAI-compat fallback)
+            content = body.get("result", {}).get("response") or body.get("response") or ""
+
+        if not content:
+            log.error("LLM returned empty content: %s", str(body)[:500])
+            raise HTTPException(502, "AI returned empty response")
+
+        # Parse JSON — strip markdown fences if present
+        cleaned = content.strip()
+        if cleaned.startswith("```"):
+            # remove ``` or ```json fences
+            cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned)
+            cleaned = re.sub(r"\s*```\s*$", "", cleaned)
+
+        try:
+            return json.loads(cleaned)
         except json.JSONDecodeError:
+            # Last resort: extract first {...} block
+            match = re.search(r"\{.*\}", cleaned, re.DOTALL)
+            if match:
+                try:
+                    return json.loads(match.group(0))
+                except json.JSONDecodeError:
+                    pass
             log.error("LLM returned non-JSON: %s", content[:500])
             raise HTTPException(502, "AI returned malformed response")
 
