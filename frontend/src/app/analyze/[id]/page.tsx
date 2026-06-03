@@ -8,6 +8,7 @@ import {
 } from "react-icons/fi";
 import { api } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
+import { Markdown } from "@/components/Markdown";
 
 interface Analysis {
   id: number;
@@ -151,7 +152,9 @@ export default function AnalysisResultPage({ params }: { params: Promise<{ id: s
           </div>
 
           {data.summary && (
-            <p className="text-[15px] text-white/90 leading-relaxed mt-5">{data.summary}</p>
+            <div className="mt-5">
+              <Markdown>{data.summary}</Markdown>
+            </div>
           )}
 
           {tech.length > 0 && (
@@ -176,7 +179,7 @@ export default function AnalysisResultPage({ params }: { params: Promise<{ id: s
                 </span>
                 <h3 className="text-sm font-semibold">Root cause</h3>
               </div>
-              <p className="text-sm text-white/85 leading-relaxed whitespace-pre-wrap">{data.root_cause}</p>
+              <Markdown>{data.root_cause}</Markdown>
             </motion.section>
           )}
 
@@ -221,9 +224,7 @@ export default function AnalysisResultPage({ params }: { params: Promise<{ id: s
               </button>
             </header>
             <div className="p-6">
-              <pre className="text-[13px] text-white/90 leading-relaxed whitespace-pre-wrap font-mono">
-                {data.solution_steps}
-              </pre>
+              <Markdown>{data.solution_steps}</Markdown>
             </div>
           </motion.section>
         )}
@@ -302,9 +303,9 @@ export default function AnalysisResultPage({ params }: { params: Promise<{ id: s
                       {copied === "prd" ? <FiCheck size={11} /> : <FiCopy size={11} />}
                     </button>
                   </div>
-                  <pre className="text-[13px] font-mono whitespace-pre-wrap bg-background border border-border rounded-md p-3 text-white/85">
-                    {data.pr_description}
-                  </pre>
+                  <div className="bg-background border border-border rounded-md px-4 py-3">
+                    <Markdown>{data.pr_description}</Markdown>
+                  </div>
                 </div>
               )}
             </div>
