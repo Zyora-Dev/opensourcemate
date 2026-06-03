@@ -125,6 +125,9 @@ async def _call_llm(prompt: str) -> Dict[str, Any]:
             {"role": "user", "content": prompt + "\n\nRespond with valid JSON only — no markdown, no prose."},
         ],
         "temperature": 0.3,
+        # Cloudflare Workers AI defaults to ~256 tokens which truncates our schema mid-string.
+        # Llama-3.1-8b context allows much more; 4096 is safe for our response.
+        "max_tokens": 4096,
     }
 
     async with httpx.AsyncClient(timeout=120.0) as client:
