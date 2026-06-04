@@ -8,6 +8,7 @@ the structured analysis described in stages 3, 4, 5 of the plan.
 import os
 import re
 import json
+import asyncio
 import logging
 from typing import Optional, Dict, Any
 
@@ -23,10 +24,18 @@ router = APIRouter(prefix="/analyze", tags=["Analyze"])
 log = logging.getLogger(__name__)
 
 # --- LLM config (env-driven, swappable) ---
-LLM_PROVIDER = os.getenv("LLM_PROVIDER", "openai").lower()  # openai | groq | ollama
+LLM_PROVIDER = os.getenv("LLM_PROVIDER", "openai").lower()  # openai | azure | groq | cloudflare | ollama
 LLM_MODEL = os.getenv("LLM_MODEL", "gpt-4o-mini")
 LLM_API_KEY = os.getenv("OPENAI_API_KEY") or os.getenv("LLM_API_KEY")
 LLM_BASE_URL = os.getenv("LLM_BASE_URL", "https://api.openai.com/v1")
+
+# Azure OpenAI specific config — used when LLM_PROVIDER=azure
+# Endpoint example:  https://my-resource.openai.azure.com
+# Deployment is the NAME you gave the model in Azure portal (NOT the model id).
+AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT", "").rstrip("/")
+AZURE_OPENAI_API_KEY = os.getenv("AZURE_OPENAI_API_KEY", "")
+AZURE_OPENAI_DEPLOYMENT = os.getenv("AZURE_OPENAI_DEPLOYMENT", "")
+AZURE_OPENAI_API_VERSION = os.getenv("AZURE_OPENAI_API_VERSION", "2024-10-21")
 
 GITHUB_API = "https://api.github.com"
 
@@ -104,6 +113,88 @@ async def _fetch_languages(client: httpx.AsyncClient, owner: str, repo: str, tok
     except Exception:
         pass
     return {}
+
+
+async def _fetch_root_tree(client: httpx.AsyncClient, owner: str, repo: str, default_branch: str, token: Optional[str]) -> list:
+    """Top-level files/folders so the model can reason about project structure. Best-effort."""
+    try:
+        r = await client.get(
+            f"{GITHUB_API}/repos/{owner}/{repo}/contents/",
+            headers=_gh_headers(token),
+            params={"ref": default_branch} if default_branch else None,
+        )
+        if r.status_code != 200:
+            return []
+        data = r.json() or []
+        # Keep only name + type, sorted: folders first, then files
+        items = [(it.get("name", ""), it.get("type", "")) for it in data if isinstance(it, dict)]
+        items.sort(key=lambda x: (0 if x[1] == "dir" else 1, x[0].lower()))
+        return items[:60]
+    except Exception:
+        return []
+
+
+async def _fetch_good_first_issues(client: httpx.AsyncClient, owner: str, repo: str, token: Optional[str], limit: int = 8) -> list:
+    """Open issues labeled 'good first issue' or 'help wanted' — prioritized for beginners."""
+    out: list = []
+    seen: set = set()
+    for label in ("good first issue", "help wanted"):
+        try:
+            r = await client.get(
+                f"{GITHUB_API}/repos/{owner}/{repo}/issues",
+                headers=_gh_headers(token),
+                params={"state": "open", "labels": label, "sort": "updated", "direction": "desc", "per_page": 12},
+            )
+            if r.status_code != 200:
+                continue
+            for it in r.json():
+                if "pull_request" in it:
+                    continue
+                num = it.get("number")
+                if num in seen:
+                    continue
+                seen.add(num)
+                out.append(it)
+                if len(out) >= limit:
+                    return out
+        except Exception:
+            continue
+    return out
+
+
+async def _fetch_contributing(client: httpx.AsyncClient, owner: str, repo: str, token: Optional[str]) -> Optional[str]:
+    """Try common locations for CONTRIBUTING.md. Returns text or None."""
+    for path in ("CONTRIBUTING.md", ".github/CONTRIBUTING.md", "docs/CONTRIBUTING.md", "contributing.md"):
+        try:
+            r = await client.get(
+                f"{GITHUB_API}/repos/{owner}/{repo}/contents/{path}",
+                headers={**_gh_headers(token), "Accept": "application/vnd.github.raw"},
+            )
+            if r.status_code == 200 and r.text:
+                return r.text
+        except Exception:
+            pass
+    return None
+
+
+async def _fetch_recent_commits(client: httpx.AsyncClient, owner: str, repo: str, token: Optional[str], limit: int = 8) -> list:
+    """Recent commits on default branch — hints at project activity & focus areas."""
+    try:
+        r = await client.get(
+            f"{GITHUB_API}/repos/{owner}/{repo}/commits",
+            headers=_gh_headers(token),
+            params={"per_page": limit},
+        )
+        if r.status_code != 200:
+            return []
+        out = []
+        for c in r.json()[:limit]:
+            msg = (c.get("commit", {}).get("message") or "").split("\n", 1)[0][:160]
+            author = (c.get("commit", {}).get("author", {}) or {}).get("name", "?")
+            out.append({"sha": (c.get("sha") or "")[:7], "msg": msg, "author": author})
+        return out
+    except Exception:
+        return []
 
 
 def _parse_issue_url(url: str):
@@ -214,54 +305,68 @@ CRITICAL OUTPUT RULES:
 - `solution_steps` is ONE markdown string with numbered "### Step N: title" headings, NOT an array of strings.
 - `files_involved`, `tech_stack`, `git_commands` are arrays of strings.
 
-LENGTH LIMITS (HARD — output is capped at 4096 tokens; exceeding these truncates the response):
-- summary: 2-4 sentences, <= 600 characters
-- root_cause: <= 700 characters
-- solution_steps: <= 2500 characters, max 6 steps, keep code snippets compact (<= 12 lines each)
-- pr_description: <= 1200 characters with a brief checklist
-- git_commands: <= 8 commands total
+LENGTH LIMITS (HARD — output is capped; exceeding these truncates the response):
+- summary: 2-4 sentences, <= 700 characters
+- root_cause: <= 800 characters
+- solution_steps: <= 6000 characters. Use H2 ("##") section headers to organize. Code snippets <= 15 lines each.
+- pr_description: <= 1500 characters with a brief checklist
+- git_commands: <= 10 commands total
 If the problem is complex, summarize the approach instead of pasting long code. Brevity > verbosity, but be SUBSTANTIVE — do NOT return generic "clone the repo, create branch" boilerplate. Always anchor steps to the specific code, files, error, or issue described."""
 
 
 async def _call_llm(prompt: str) -> Dict[str, Any]:
-    if not LLM_API_KEY:
-        raise HTTPException(503, "AI service not configured. Admin must set OPENAI_API_KEY (or LLM_API_KEY) in backend .env")
+    # ---- Provider-specific URL + auth headers ----
+    if LLM_PROVIDER == "azure":
+        if not (AZURE_OPENAI_ENDPOINT and AZURE_OPENAI_API_KEY and AZURE_OPENAI_DEPLOYMENT):
+            raise HTTPException(
+                503,
+                "Azure OpenAI not configured. Admin must set AZURE_OPENAI_ENDPOINT, "
+                "AZURE_OPENAI_API_KEY, and AZURE_OPENAI_DEPLOYMENT in backend .env",
+            )
+        url = (
+            f"{AZURE_OPENAI_ENDPOINT}/openai/deployments/{AZURE_OPENAI_DEPLOYMENT}"
+            f"/chat/completions?api-version={AZURE_OPENAI_API_VERSION}"
+        )
+        auth_headers = {"api-key": AZURE_OPENAI_API_KEY}
+        # Azure ignores the "model" field in body — deployment name in URL drives it.
+        # Send it anyway for logging/compat.
+        model_for_payload = AZURE_OPENAI_DEPLOYMENT
+    else:
+        if not LLM_API_KEY:
+            raise HTTPException(
+                503,
+                "AI service not configured. Admin must set OPENAI_API_KEY (or LLM_API_KEY) in backend .env",
+            )
+        url = f"{LLM_BASE_URL}/chat/completions"
+        auth_headers = {"Authorization": f"Bearer {LLM_API_KEY}"}
+        model_for_payload = LLM_MODEL
 
     base_payload = {
-        "model": LLM_MODEL,
+        "model": model_for_payload,
         "messages": [
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": prompt + "\n\nRespond with valid JSON only — no markdown, no prose."},
         ],
         "temperature": 0.3,
-        # Cloudflare Workers AI defaults to ~256 tokens which truncates our schema mid-string.
-        # Llama-3.1-8b context allows much more; 4096 is safe for our response.
-        "max_tokens": 4096,
+        # Generous cap — Azure gpt-4.1-mini, OpenAI, and Llama all handle 8000 fine.
+        # Cloudflare 8B truncates around 4096 but we have recovery for that.
+        "max_tokens": 8000 if LLM_PROVIDER in ("azure", "openai") else 4096,
     }
 
+    headers = {**auth_headers, "Content-Type": "application/json"}
+
     async with httpx.AsyncClient(timeout=120.0) as client:
-        # First try with strict JSON mode (works on OpenAI, some CF models)
+        # First try with strict JSON mode (works on OpenAI, Azure, some CF models)
         payload = {**base_payload, "response_format": {"type": "json_object"}}
-        r = await client.post(
-            f"{LLM_BASE_URL}/chat/completions",
-            headers={
-                "Authorization": f"Bearer {LLM_API_KEY}",
-                "Content-Type": "application/json",
-            },
-            json=payload,
-        )
+        r = await client.post(url, headers=headers, json=payload)
 
         # Some Cloudflare / Ollama models reject response_format → retry without it
         if r.status_code in (400, 422):
-            log.info("response_format unsupported, retrying without it (provider=%s, model=%s)", LLM_PROVIDER, LLM_MODEL)
-            r = await client.post(
-                f"{LLM_BASE_URL}/chat/completions",
-                headers={
-                    "Authorization": f"Bearer {LLM_API_KEY}",
-                    "Content-Type": "application/json",
-                },
-                json=base_payload,
+            log.info(
+                "response_format unsupported, retrying without it (provider=%s, model=%s)",
+                LLM_PROVIDER, model_for_payload,
             )
+            r = await client.post(url, headers=headers, json=base_payload)
 
         if r.status_code != 200:
             log.error("LLM error %s: %s", r.status_code, r.text[:500])
@@ -402,6 +507,10 @@ def _build_prompt(
     readme: Optional[str] = None,
     top_issues: Optional[list] = None,
     languages: Optional[Dict[str, int]] = None,
+    root_tree: Optional[list] = None,
+    good_first_issues: Optional[list] = None,
+    contributing: Optional[str] = None,
+    recent_commits: Optional[list] = None,
 ) -> str:
     parts = []
     if issue_data:
@@ -429,23 +538,49 @@ def _build_prompt(
             f"Topics: {', '.join(repo_data.get('topics') or []) or '—'}\n"
             f"Stars: {repo_data.get('stargazers_count')} \u00b7 Forks: {repo_data.get('forks_count')} \u00b7 Open issues: {repo_data.get('open_issues_count')}\n"
             f"Default branch: {repo_data.get('default_branch')}\n"
+            f"License: {(repo_data.get('license') or {}).get('spdx_id') or '—'}\n"
             f"Homepage: {repo_data.get('homepage') or '—'}"
         )
+    if root_tree:
+        tree_lines = []
+        for n, t in root_tree:
+            icon = "[dir]" if t == "dir" else "[file]"
+            tree_lines.append(f"{icon} {n}")
+        parts.append("## Top-level structure\n" + "\n".join(tree_lines))
     if readme:
-        parts.append(f"## README excerpt\n{_truncate(readme, 4000)}")
+        parts.append(f"## README excerpt\n{_truncate(readme, 5000)}")
+    if contributing:
+        parts.append(f"## CONTRIBUTING guide excerpt\n{_truncate(contributing, 2500)}")
+    if recent_commits:
+        commit_lines = [f"- `{c['sha']}` {c['msg']} \u2014 _{c['author']}_" for c in recent_commits]
+        parts.append("## Recent commits (default branch)\n" + "\n".join(commit_lines))
+    if good_first_issues:
+        gfi_lines = []
+        for it in good_first_issues:
+            labels = ", ".join(l.get("name", "") for l in (it.get("labels") or []))
+            body_excerpt = (it.get("body") or "").strip().replace("\r", "").replace("\n", " ")
+            if len(body_excerpt) > 350:
+                body_excerpt = body_excerpt[:350] + "\u2026"
+            gfi_lines.append(
+                f"- #{it.get('number')} \u00b7 {it.get('title')}"
+                + (f" \u00b7 [{labels}]" if labels else "")
+                + f" \u00b7 \ud83d\udd17 {it.get('html_url')}"
+                + (f"\n   {body_excerpt}" if body_excerpt else "")
+            )
+        parts.append("## Beginner-friendly open issues (good first issue / help wanted)\n" + "\n".join(gfi_lines))
     if top_issues:
         lines = []
         for it in top_issues:
             labels = ", ".join(l.get("name", "") for l in (it.get("labels") or []))
             body_excerpt = (it.get("body") or "").strip().replace("\r", "").replace("\n", " ")
             if len(body_excerpt) > 280:
-                body_excerpt = body_excerpt[:280] + "…"
+                body_excerpt = body_excerpt[:280] + "\u2026"
             lines.append(
                 f"- #{it.get('number')} \u00b7 {it.get('title')}"
                 + (f" \u00b7 [{labels}]" if labels else "")
                 + (f"\n   {body_excerpt}" if body_excerpt else "")
             )
-        parts.append("## Recent open issues (sample)\n" + "\n".join(lines))
+        parts.append("## Other recently active open issues (sample)\n" + "\n".join(lines))
     if req.error_log:
         parts.append(f"## Error / Stack Trace\n```\n{_truncate(req.error_log, 6000)}\n```")
     if req.merge_conflict:
@@ -472,13 +607,41 @@ def _build_prompt(
     elif repo_data:
         task = (
             "The user wants to contribute to this repository but hasn't picked an issue yet. "
-            "Using the README, language breakdown, and the sample of recent open issues, "
-            "produce a SUBSTANTIVE analysis of the project (what it does, architecture clues, key tech) "
-            "and \u2014 critically \u2014 in `solution_steps`, recommend 2-3 SPECIFIC issues from the sample list above "
-            "that are most beginner-friendly. For each recommended issue, cite the issue number, "
-            "explain why it's a good fit, and outline the approach. "
-            "Set `pr_title`/`pr_description` as a TEMPLATE the user can adapt once they pick an issue. "
-            "Do NOT return generic 'clone the repo, create a branch' instructions \u2014 anchor every step to specifics from the README and issues above."
+            "Produce a COMPREHENSIVE, multi-section repo review using ALL the context above (README, CONTRIBUTING, "
+            "top-level structure, language breakdown, recent commits, good-first-issue + help-wanted issues, and recent issues). "
+            "Be specific \u2014 reference real file/folder names from the structure, real issue numbers from the lists, "
+            "and real commands inferred from the README/CONTRIBUTING.\n\n"
+            "FORMAT `solution_steps` AS RICH MARKDOWN with EXACTLY these H2 sections in this order:\n\n"
+            "## What this project does\n"
+            "2-4 sentences in plain English. Mention the problem it solves and who uses it. Anchor to the README.\n\n"
+            "## Architecture & key modules\n"
+            "Bullet list of the most important folders/files from the top-level structure with a 1-line purpose for each "
+            "(e.g. `- src/api/ \u2014 FastAPI route handlers`). 4-8 entries. Be specific to what you see, do NOT invent paths.\n\n"
+            "## Tech stack you'll touch\n"
+            "Bullet list mapping each major tech (from language breakdown + README + manifests visible in top-level) to "
+            "what a contributor will read/write. e.g. `- TypeScript (74%) \u2014 React components in app/`. 3-6 entries.\n\n"
+            "## Recommended issues to work on\n"
+            "Pick 3-5 issues from the BEGINNER-FRIENDLY list (preferred) or the recently active list. For EACH issue, write a sub-section:\n"
+            "### #<number> \u2014 <title>\n"
+            "- **Difficulty:** easy / medium / hard\n"
+            "- **Why this is a good fit:** 1-2 sentences\n"
+            "- **Files likely involved:** comma-separated paths\n"
+            "- **Approach:** 3-5 short bullets with the concrete steps\n"
+            "- **Watch out for:** 1 sentence on a common pitfall (optional)\n\n"
+            "## Local setup quick start\n"
+            "Numbered steps inferred from README/CONTRIBUTING (clone \u2192 install \u2192 env \u2192 run \u2192 test). Use real commands you can see in the docs. 4-7 steps with `code blocks` for commands. If the README is unclear about a step, say `(check README)` instead of inventing.\n\n"
+            "## Contribution workflow for this repo\n"
+            "Numbered steps reflecting the CONTRIBUTING guide (branch naming, commit style, PR template, code style, tests). 3-6 steps. If no CONTRIBUTING was provided, give sensible GitHub defaults but mark them as `(general best practice)`.\n\n"
+            "## Tips for first-time contributors here\n"
+            "3-5 short bullets with project-specific advice (e.g. \"this repo uses pre-commit hooks \u2014 install them with X\", \"PRs need a changelog entry under CHANGELOG.md\").\n\n"
+            "Set `summary` to a 2-3 sentence elevator pitch of the project + what kind of contributors thrive here. "
+            "Set `difficulty` to the OVERALL contribution difficulty for a beginner. "
+            "Set `files_involved` to the most important files a contributor will read first (from the structure). "
+            "Set `tech_stack` to the actual technologies (from the language breakdown + manifests). "
+            "Set `root_cause` to \"N/A\" (this is a repo review, not a bug). "
+            "Set `pr_title` and `pr_description` as a TEMPLATE the user can adapt once they pick an issue \u2014 include placeholders like `<issue-#>` and `<short-summary>`. "
+            "Set `git_commands` to a clean contributor workflow specific to this repo (fork, clone, branch naming convention, commit, push, PR). "
+            "Do NOT return generic \"clone the repo\" boilerplate without the project-specific anchors above."
         )
     else:
         task = "Analyze the inputs above and respond with the JSON schema."
@@ -514,7 +677,7 @@ async def create_analysis(
         error_log=body.error_log,
         merge_conflict=body.merge_conflict,
         status="pending",
-        model_used=LLM_MODEL,
+        model_used=(AZURE_OPENAI_DEPLOYMENT if LLM_PROVIDER == "azure" else LLM_MODEL),
     )
     db.add(row)
     db.commit()
@@ -527,6 +690,10 @@ async def create_analysis(
         readme = None
         top_issues: list = []
         languages: Dict[str, int] = {}
+        root_tree: list = []
+        good_first: list = []
+        contributing: Optional[str] = None
+        recent_commits: list = []
         async with httpx.AsyncClient(timeout=20.0) as client:
             if issue_parts:
                 owner, repo, num = issue_parts
@@ -541,16 +708,36 @@ async def create_analysis(
                 owner, repo = repo_parts
                 repo_data = await _fetch_repo(client, owner, repo, gh_token)
                 row.repo_name = f"{owner}/{repo}"
-                # Repo-only mode: pull README, languages, and a sample of open issues
-                # so the LLM has real context to produce a substantive analysis.
-                readme = await _fetch_readme(client, owner, repo, gh_token)
-                languages = await _fetch_languages(client, owner, repo, gh_token)
-                top_issues = await _fetch_top_issues(client, owner, repo, gh_token, limit=8)
+                default_branch = repo_data.get("default_branch") or "main"
+                # Repo-only mode: pull README, languages, structure, beginner-friendly issues,
+                # CONTRIBUTING, and recent commits in PARALLEL so the LLM has rich context.
+                (
+                    readme,
+                    languages,
+                    top_issues,
+                    root_tree,
+                    good_first,
+                    contributing,
+                    recent_commits,
+                ) = await asyncio.gather(
+                    _fetch_readme(client, owner, repo, gh_token),
+                    _fetch_languages(client, owner, repo, gh_token),
+                    _fetch_top_issues(client, owner, repo, gh_token, limit=10),
+                    _fetch_root_tree(client, owner, repo, default_branch, gh_token),
+                    _fetch_good_first_issues(client, owner, repo, gh_token, limit=8),
+                    _fetch_contributing(client, owner, repo, gh_token),
+                    _fetch_recent_commits(client, owner, repo, gh_token, limit=8),
+                )
 
         if repo_data:
             row.repo_language = repo_data.get("language")
 
-        prompt = _build_prompt(body, issue_data, repo_data, readme=readme, top_issues=top_issues, languages=languages)
+        prompt = _build_prompt(
+            body, issue_data, repo_data,
+            readme=readme, top_issues=top_issues, languages=languages,
+            root_tree=root_tree, good_first_issues=good_first,
+            contributing=contributing, recent_commits=recent_commits,
+        )
         result = await _call_llm(prompt)
 
         row.summary = _to_text(result.get("summary"))
