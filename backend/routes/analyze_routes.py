@@ -290,6 +290,16 @@ Schema:
   "tech_stack": ["React", "TypeScript", ...]   (technologies relevant; can be empty),
   "root_cause": "What is actually causing the problem (or 'N/A' if not applicable)",
   "solution_steps": "Step-by-step markdown with code blocks where useful",
+  "code_suggestions": [
+    {
+      "file": "src/path/to/file.ext",
+      "lines": "42-58"           (or "42" or "" if unknown),
+      "language": "typescript"   (lowercase syntax-highlighter id),
+      "before": "current code (may be empty for new files)",
+      "after": "the recommended new code",
+      "explanation": "1-2 sentences on WHY this change fixes/improves it"
+    }
+  ],
   "git_commands": ["git checkout -b fix/xyz", "git add .", ...],
   "pr_title": "Short, conventional-commit style title",
   "pr_description": "Markdown PR body: what + why + how + checklist"
@@ -304,6 +314,15 @@ CRITICAL OUTPUT RULES:
 - `summary`, `root_cause`, `solution_steps`, `pr_title`, `pr_description` MUST be JSON STRINGS, never arrays or objects. If a field has multiple parts, join them inside one markdown string.
 - `solution_steps` is ONE markdown string with numbered "### Step N: title" headings, NOT an array of strings.
 - `files_involved`, `tech_stack`, `git_commands` are arrays of strings.
+- `code_suggestions` is an ARRAY of OBJECTS with `file`, `lines`, `language`, `before`, `after`, `explanation`. Provide 1-5 entries when there are concrete code changes (issue/error/conflict modes). Empty array `[]` is OK for repo-review mode if no specific patch fits.
+
+CODE SUGGESTION RULES:
+- Each entry MUST point to a real-looking file path (use the README/structure context to infer it).
+- `before` should be the smallest meaningful slice of current code that needs to change (5-25 lines max). Leave empty string for brand-new files.
+- `after` is the corrected/new code only — not the whole file. Same scope as `before`.
+- `lines` is the line range you're targeting in the original file (e.g. "42-58"). Use "" if you genuinely cannot infer.
+- `language` is a lowercase syntax-highlighter id like "typescript", "python", "go", "rust", "javascript", "tsx", "jsx", "yaml", "json", "bash".
+- `explanation` is 1-2 sentences focused on WHY (the bug/improvement), not WHAT.
 
 LENGTH LIMITS (HARD — output is capped; exceeding these truncates the response):
 - summary: 2-4 sentences, <= 700 characters
@@ -752,6 +771,28 @@ async def create_analysis(
         row.git_commands = "\n".join(cmds) if isinstance(cmds, list) else str(cmds)
         row.pr_title = _to_text(result.get("pr_title"))
         row.pr_description = _to_text(result.get("pr_description"))
+
+        # Code suggestions: keep only valid dict entries with at least one of before/after,
+        # store as JSON string for the frontend to parse.
+        raw_cs = result.get("code_suggestions") or []
+        clean_cs: list = []
+        if isinstance(raw_cs, list):
+            for item in raw_cs:
+                if not isinstance(item, dict):
+                    continue
+                before = _to_text(item.get("before")) or ""
+                after = _to_text(item.get("after")) or ""
+                if not (before or after):
+                    continue
+                clean_cs.append({
+                    "file": _to_text(item.get("file")) or "",
+                    "lines": _to_text(item.get("lines")) or "",
+                    "language": (_to_text(item.get("language")) or "").lower().strip(),
+                    "before": before,
+                    "after": after,
+                    "explanation": _to_text(item.get("explanation")) or "",
+                })
+        row.code_suggestions = json.dumps(clean_cs) if clean_cs else None
         row.status = "done"
 
     except HTTPException:

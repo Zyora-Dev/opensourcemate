@@ -78,6 +78,7 @@ class AnalysisResponse(BaseModel):
     git_commands: Optional[str] = None
     pr_title: Optional[str] = None
     pr_description: Optional[str] = None
+    code_suggestions: Optional[str] = None
     status: str
     error_message: Optional[str] = None
     model_used: Optional[str] = None

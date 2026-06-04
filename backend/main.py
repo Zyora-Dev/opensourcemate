@@ -14,10 +14,15 @@ if _env_file.exists():
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy import text
 from database import Base, engine
 from routes import auth_routes, onboarding_routes, dashboard_routes, github_routes, profile_routes, analyze_routes
 
 Base.metadata.create_all(bind=engine)
+
+# Lightweight idempotent migrations (additive columns only — never drop)
+with engine.begin() as conn:
+    conn.execute(text("ALTER TABLE analyses ADD COLUMN IF NOT EXISTS code_suggestions TEXT"))
 
 app = FastAPI(title="OpenSourceMate API")
 

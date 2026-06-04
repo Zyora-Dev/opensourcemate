@@ -67,6 +67,7 @@ class Analysis(Base):
     git_commands = Column(Text, nullable=True)         # newline-separated shell
     pr_title = Column(String, nullable=True)
     pr_description = Column(Text, nullable=True)
+    code_suggestions = Column(Text, nullable=True)     # JSON-encoded list of {file, lines, before, after, explanation, language}
 
     status = Column(String, default="pending")         # pending | done | error
     error_message = Column(String, nullable=True)

@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import {
   FiArrowLeft, FiLoader, FiAlertCircle, FiCheck, FiCopy,
   FiTerminal, FiFileText, FiCode, FiGitPullRequest, FiZap, FiTrash2,
+  FiFile, FiMinus, FiPlus,
 } from "react-icons/fi";
 import { api } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
@@ -28,6 +29,7 @@ interface Analysis {
   git_commands?: string | null;
   pr_title?: string | null;
   pr_description?: string | null;
+  code_suggestions?: string | null;
   status: string;
   error_message?: string | null;
   model_used?: string | null;
@@ -95,6 +97,23 @@ export default function AnalysisResultPage({ params }: { params: Promise<{ id: s
   const files = (data.files_involved || "").split("\n").filter(Boolean);
   const tech = (data.tech_stack || "").split(",").map(s => s.trim()).filter(Boolean);
   const cmds = (data.git_commands || "").split("\n").filter(Boolean);
+
+  // Code suggestions arrive as JSON-encoded string
+  type CodeSuggestion = {
+    file: string;
+    lines: string;
+    language: string;
+    before: string;
+    after: string;
+    explanation: string;
+  };
+  let suggestions: CodeSuggestion[] = [];
+  if (data.code_suggestions) {
+    try {
+      const raw = JSON.parse(data.code_suggestions);
+      if (Array.isArray(raw)) suggestions = raw as CodeSuggestion[];
+    } catch { /* ignore parse errors */ }
+  }
 
   return (
     <div className="max-w-5xl mx-auto px-3 md:px-6 space-y-5">
@@ -225,6 +244,101 @@ export default function AnalysisResultPage({ params }: { params: Promise<{ id: s
             </header>
             <div className="p-6">
               <Markdown>{data.solution_steps}</Markdown>
+            </div>
+          </motion.section>
+        )}
+
+        {/* Code canvas — concrete code suggestions with file location + before/after */}
+        {suggestions.length > 0 && (
+          <motion.section initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }}
+            className="bg-surface border border-border rounded-2xl overflow-hidden">
+            <header className="flex items-center justify-between px-6 py-4 border-b border-border">
+              <div className="flex items-center gap-2">
+                <span className="w-7 h-7 rounded-md bg-crimson/10 border border-crimson/20 text-crimson flex items-center justify-center">
+                  <FiFile size={13} />
+                </span>
+                <div>
+                  <h3 className="text-sm font-semibold">Code suggestions</h3>
+                  <p className="text-[11px] text-muted-foreground">
+                    {suggestions.length} concrete change{suggestions.length === 1 ? "" : "s"} · before vs after with file location
+                  </p>
+                </div>
+              </div>
+            </header>
+            <div className="divide-y divide-border">
+              {suggestions.map((s, i) => (
+                <div key={i} className="px-6 py-5">
+                  {/* File header */}
+                  <div className="flex items-start justify-between gap-3 flex-wrap mb-3">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-[11px] font-mono text-crimson bg-crimson/10 border border-crimson/20 rounded px-1.5 py-0.5 shrink-0">
+                          #{i + 1}
+                        </span>
+                        <code className="text-[13.5px] font-mono text-white font-medium break-all">
+                          {s.file || "(file unknown)"}
+                        </code>
+                        {s.lines && (
+                          <span className="text-[11px] font-mono text-muted-foreground bg-background border border-border rounded px-1.5 py-0.5">
+                            L{s.lines}
+                          </span>
+                        )}
+                        {s.language && (
+                          <span className="text-[10.5px] uppercase tracking-wider text-muted-foreground bg-background border border-border rounded px-1.5 py-0.5">
+                            {s.language}
+                          </span>
+                        )}
+                      </div>
+                      {s.explanation && (
+                        <p className="text-[13px] text-white/75 mt-2 leading-relaxed">{s.explanation}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Diff canvas */}
+                  <div className="grid md:grid-cols-2 gap-3">
+                    {/* Before */}
+                    <div className="border border-red-500/25 bg-red-500/[0.04] rounded-lg overflow-hidden">
+                      <div className="flex items-center justify-between px-3 py-2 border-b border-red-500/20 bg-red-500/[0.06]">
+                        <div className="flex items-center gap-1.5 text-[11px] font-mono text-red-300">
+                          <FiMinus size={11} /> Before
+                        </div>
+                        {s.before && (
+                          <button
+                            onClick={() => copy(s.before, `before-${i}`)}
+                            className="text-[11px] text-muted-foreground hover:text-red-300 transition-colors inline-flex items-center gap-1"
+                          >
+                            {copied === `before-${i}` ? <FiCheck size={10} /> : <FiCopy size={10} />}
+                          </button>
+                        )}
+                      </div>
+                      <pre className="p-3 text-[12.5px] font-mono text-white/90 overflow-x-auto leading-relaxed whitespace-pre">
+{s.before || <span className="text-muted-foreground italic">(new file — no existing code)</span>}
+                      </pre>
+                    </div>
+
+                    {/* After */}
+                    <div className="border border-emerald-500/25 bg-emerald-500/[0.04] rounded-lg overflow-hidden">
+                      <div className="flex items-center justify-between px-3 py-2 border-b border-emerald-500/20 bg-emerald-500/[0.06]">
+                        <div className="flex items-center gap-1.5 text-[11px] font-mono text-emerald-300">
+                          <FiPlus size={11} /> After
+                        </div>
+                        {s.after && (
+                          <button
+                            onClick={() => copy(s.after, `after-${i}`)}
+                            className="text-[11px] text-muted-foreground hover:text-emerald-300 transition-colors inline-flex items-center gap-1"
+                          >
+                            {copied === `after-${i}` ? <FiCheck size={10} /> : <FiCopy size={10} />}
+                          </button>
+                        )}
+                      </div>
+                      <pre className="p-3 text-[12.5px] font-mono text-white/90 overflow-x-auto leading-relaxed whitespace-pre">
+{s.after || <span className="text-muted-foreground italic">(deleted)</span>}
+                      </pre>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </motion.section>
         )}
