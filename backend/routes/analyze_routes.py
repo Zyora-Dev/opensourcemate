@@ -126,6 +126,65 @@ def _truncate(s: Optional[str], n: int) -> str:
     return s if len(s) <= n else s[:n] + "\n…[truncated]"
 
 
+def _to_text(v) -> Optional[str]:
+    """Coerce an LLM field that may arrive as str / list / dict into a clean text string."""
+    if v is None:
+        return None
+    if isinstance(v, str):
+        return v
+    if isinstance(v, list):
+        return "\n\n".join(_to_text(x) or "" for x in v).strip() or None
+    if isinstance(v, dict):
+        # join values
+        return "\n\n".join(f"**{k}**: {_to_text(val) or ''}" for k, val in v.items()).strip() or None
+    return str(v)
+
+
+def _to_markdown_steps(v) -> Optional[str]:
+    """Normalize `solution_steps` into clean markdown.
+    Accepts str (passed through), list[str] (numbered), list[dict] (title+body), or dict.
+    """
+    if v is None:
+        return None
+    if isinstance(v, str):
+        return v
+    if isinstance(v, list):
+        out = []
+        for i, item in enumerate(v, 1):
+            if isinstance(item, str):
+                # If the string already starts with a numeric/markdown marker, keep as-is.
+                stripped = item.lstrip()
+                if stripped.startswith(("#", "-", "*")) or (stripped[:3].rstrip(".").isdigit() and "." in stripped[:4]):
+                    out.append(item.strip())
+                else:
+                    out.append(f"### Step {i}\n\n{item.strip()}")
+            elif isinstance(item, dict):
+                title = item.get("title") or item.get("step") or item.get("name") or f"Step {i}"
+                body_parts = []
+                for k in ("description", "details", "body", "explanation", "instructions"):
+                    if item.get(k):
+                        body_parts.append(_to_text(item[k]) or "")
+                code = item.get("code") or item.get("snippet") or item.get("example")
+                if code:
+                    lang = item.get("language") or item.get("lang") or ""
+                    body_parts.append(f"```{lang}\n{code}\n```")
+                # any leftover keys not handled above
+                handled = {"title", "step", "name", "description", "details", "body",
+                           "explanation", "instructions", "code", "snippet", "example",
+                           "language", "lang"}
+                for k, val in item.items():
+                    if k not in handled and val:
+                        body_parts.append(f"**{k}**: {_to_text(val) or ''}")
+                body = "\n\n".join(b for b in body_parts if b).strip()
+                out.append(f"### Step {i}: {title}" + (f"\n\n{body}" if body else ""))
+            else:
+                out.append(f"### Step {i}\n\n{str(item)}")
+        return "\n\n".join(out).strip() or None
+    if isinstance(v, dict):
+        return _to_markdown_steps(list(v.values()))
+    return str(v)
+
+
 # ---------- LLM ----------
 
 SYSTEM_PROMPT = """You are OpenSourceMate, an expert open-source contribution coach.
@@ -151,6 +210,9 @@ CRITICAL OUTPUT RULES:
 - Inside any string value, you MUST escape newlines as \\n, tabs as \\t, and double-quotes as \\".
 - Never put raw line breaks inside a JSON string.
 - Do not wrap the JSON in markdown fences.
+- `summary`, `root_cause`, `solution_steps`, `pr_title`, `pr_description` MUST be JSON STRINGS, never arrays or objects. If a field has multiple parts, join them inside one markdown string.
+- `solution_steps` is ONE markdown string with numbered "### Step N: title" headings, NOT an array of strings.
+- `files_involved`, `tech_stack`, `git_commands` are arrays of strings.
 
 LENGTH LIMITS (HARD — output is capped at 4096 tokens; exceeding these truncates the response):
 - summary: 2-4 sentences, <= 600 characters
@@ -491,18 +553,18 @@ async def create_analysis(
         prompt = _build_prompt(body, issue_data, repo_data, readme=readme, top_issues=top_issues, languages=languages)
         result = await _call_llm(prompt)
 
-        row.summary = result.get("summary")
+        row.summary = _to_text(result.get("summary"))
         row.difficulty = (result.get("difficulty") or "").lower() or None
         files = result.get("files_involved") or []
         row.files_involved = "\n".join(files) if isinstance(files, list) else str(files)
         tech = result.get("tech_stack") or []
         row.tech_stack = ", ".join(tech) if isinstance(tech, list) else str(tech)
-        row.root_cause = result.get("root_cause")
-        row.solution_steps = result.get("solution_steps")
+        row.root_cause = _to_text(result.get("root_cause"))
+        row.solution_steps = _to_markdown_steps(result.get("solution_steps"))
         cmds = result.get("git_commands") or []
         row.git_commands = "\n".join(cmds) if isinstance(cmds, list) else str(cmds)
-        row.pr_title = result.get("pr_title")
-        row.pr_description = result.get("pr_description")
+        row.pr_title = _to_text(result.get("pr_title"))
+        row.pr_description = _to_text(result.get("pr_description"))
         row.status = "done"
 
     except HTTPException:
