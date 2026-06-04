@@ -268,11 +268,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
         {/* ========== Main column ========== */}
         <div
-          className="min-h-screen flex flex-col px-3"
+          className="h-screen flex flex-col px-3 overflow-hidden"
           style={{ ["--sidebar-w" as string]: `${sidebarW}px` }}
         >
           {/* Header */}
-          <header className="relative z-30 mt-3 md:ml-[calc(var(--sidebar-w)+12px)] transition-[margin] duration-200 ease-out">
+          <header className="relative z-30 mt-3 shrink-0 md:ml-[calc(var(--sidebar-w)+12px)] transition-[margin] duration-200 ease-out">
             <div className="bg-surface/80 backdrop-blur-xl border border-border rounded-2xl shadow-[0_4px_20px_-8px_rgba(0,0,0,0.5)]">
               <div className="flex items-center justify-between gap-3 px-4 md:px-5 h-14">
                 {/* Mobile menu */}
@@ -344,8 +344,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </div>
           </header>
 
-          {/* Content */}
-          <main className="relative z-10 flex-1 md:ml-[calc(var(--sidebar-w)+12px)] transition-[margin] duration-200 ease-out pt-6 md:pt-8 pb-6 md:pb-10">
+          {/* Content — own scroll container so it can't slide under the header */}
+          <main className="relative z-10 flex-1 min-h-0 overflow-y-auto md:ml-[calc(var(--sidebar-w)+12px)] transition-[margin] duration-200 ease-out pt-6 md:pt-8 pb-6 md:pb-10">
             {children}
           </main>
         </div>
