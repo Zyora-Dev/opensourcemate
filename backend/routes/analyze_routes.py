@@ -67,6 +67,45 @@ async def _fetch_repo(client: httpx.AsyncClient, owner: str, repo: str, token: O
     return r.json()
 
 
+async def _fetch_readme(client: httpx.AsyncClient, owner: str, repo: str, token: Optional[str]) -> Optional[str]:
+    """Return the decoded README text, or None on failure. Best-effort — never raises."""
+    try:
+        r = await client.get(
+            f"{GITHUB_API}/repos/{owner}/{repo}/readme",
+            headers={**_gh_headers(token), "Accept": "application/vnd.github.raw"},
+        )
+        if r.status_code == 200:
+            return r.text
+    except Exception:
+        pass
+    return None
+
+
+async def _fetch_top_issues(client: httpx.AsyncClient, owner: str, repo: str, token: Optional[str], limit: int = 8) -> list:
+    """Return up to `limit` recently updated open issues (PRs filtered out). Best-effort."""
+    try:
+        r = await client.get(
+            f"{GITHUB_API}/repos/{owner}/{repo}/issues",
+            headers=_gh_headers(token),
+            params={"state": "open", "sort": "updated", "direction": "desc", "per_page": 25},
+        )
+        if r.status_code != 200:
+            return []
+        return [i for i in r.json() if "pull_request" not in i][:limit]
+    except Exception:
+        return []
+
+
+async def _fetch_languages(client: httpx.AsyncClient, owner: str, repo: str, token: Optional[str]) -> Dict[str, int]:
+    try:
+        r = await client.get(f"{GITHUB_API}/repos/{owner}/{repo}/languages", headers=_gh_headers(token))
+        if r.status_code == 200:
+            return r.json()
+    except Exception:
+        pass
+    return {}
+
+
 def _parse_issue_url(url: str):
     m = ISSUE_URL_RE.match(url.strip())
     if not m:
@@ -114,12 +153,12 @@ CRITICAL OUTPUT RULES:
 - Do not wrap the JSON in markdown fences.
 
 LENGTH LIMITS (HARD — output is capped at 4096 tokens; exceeding these truncates the response):
-- summary: <= 350 characters
-- root_cause: <= 500 characters
-- solution_steps: <= 1800 characters, max 4 steps, keep code snippets compact (<= 8 lines each)
-- pr_description: <= 900 characters with a brief checklist
-- git_commands: <= 6 commands total
-If the problem is complex, summarize the approach instead of pasting long code. Brevity > verbosity."""
+- summary: 2-4 sentences, <= 600 characters
+- root_cause: <= 700 characters
+- solution_steps: <= 2500 characters, max 6 steps, keep code snippets compact (<= 12 lines each)
+- pr_description: <= 1200 characters with a brief checklist
+- git_commands: <= 8 commands total
+If the problem is complex, summarize the approach instead of pasting long code. Brevity > verbosity, but be SUBSTANTIVE — do NOT return generic "clone the repo, create branch" boilerplate. Always anchor steps to the specific code, files, error, or issue described."""
 
 
 async def _call_llm(prompt: str) -> Dict[str, Any]:
@@ -294,7 +333,14 @@ def _escape_raw_controls_in_strings(s: str) -> str:
     return "".join(out)
 
 
-def _build_prompt(req: schemas.AnalyzeRequest, issue_data: Optional[dict], repo_data: Optional[dict]) -> str:
+def _build_prompt(
+    req: schemas.AnalyzeRequest,
+    issue_data: Optional[dict],
+    repo_data: Optional[dict],
+    readme: Optional[str] = None,
+    top_issues: Optional[list] = None,
+    languages: Optional[Dict[str, int]] = None,
+) -> str:
     parts = []
     if issue_data:
         parts.append(
@@ -307,21 +353,75 @@ def _build_prompt(req: schemas.AnalyzeRequest, issue_data: Optional[dict], repo_
             f"Body:\n{_truncate(issue_data.get('body'), 6000)}"
         )
     if repo_data:
+        lang_str = "—"
+        if languages:
+            total = sum(languages.values()) or 1
+            top = sorted(languages.items(), key=lambda x: -x[1])[:5]
+            lang_str = ", ".join(f"{k} {v * 100 // total}%" for k, v in top)
         parts.append(
             f"## Repository\n"
             f"Name: {repo_data.get('full_name')}\n"
             f"Description: {repo_data.get('description') or '—'}\n"
-            f"Language: {repo_data.get('language') or '—'}\n"
-            f"Topics: {', '.join(repo_data.get('topics') or [])}\n"
-            f"Stars: {repo_data.get('stargazers_count')}\n"
-            f"Open issues: {repo_data.get('open_issues_count')}"
+            f"Primary language: {repo_data.get('language') or '—'}\n"
+            f"Language breakdown: {lang_str}\n"
+            f"Topics: {', '.join(repo_data.get('topics') or []) or '—'}\n"
+            f"Stars: {repo_data.get('stargazers_count')} \u00b7 Forks: {repo_data.get('forks_count')} \u00b7 Open issues: {repo_data.get('open_issues_count')}\n"
+            f"Default branch: {repo_data.get('default_branch')}\n"
+            f"Homepage: {repo_data.get('homepage') or '—'}"
         )
+    if readme:
+        parts.append(f"## README excerpt\n{_truncate(readme, 4000)}")
+    if top_issues:
+        lines = []
+        for it in top_issues:
+            labels = ", ".join(l.get("name", "") for l in (it.get("labels") or []))
+            body_excerpt = (it.get("body") or "").strip().replace("\r", "").replace("\n", " ")
+            if len(body_excerpt) > 280:
+                body_excerpt = body_excerpt[:280] + "…"
+            lines.append(
+                f"- #{it.get('number')} \u00b7 {it.get('title')}"
+                + (f" \u00b7 [{labels}]" if labels else "")
+                + (f"\n   {body_excerpt}" if body_excerpt else "")
+            )
+        parts.append("## Recent open issues (sample)\n" + "\n".join(lines))
     if req.error_log:
         parts.append(f"## Error / Stack Trace\n```\n{_truncate(req.error_log, 6000)}\n```")
     if req.merge_conflict:
         parts.append(f"## Merge Conflict Snippet\n```\n{_truncate(req.merge_conflict, 6000)}\n```")
 
-    return "\n\n".join(parts) + "\n\nAnalyze the above and respond with the JSON schema."
+    # Task framing depends on what we have
+    if issue_data:
+        task = (
+            "Analyze the GitHub issue above. Identify the most likely root cause, the files probably involved, "
+            "and produce concrete step-by-step guidance with code examples a junior contributor can follow. "
+            "Make `solution_steps` specific to THIS issue \u2014 not generic onboarding. "
+            "Generate a `pr_title` and `pr_description` ready to paste into GitHub."
+        )
+    elif req.error_log:
+        task = (
+            "Analyze the error/stack trace above. Identify the root cause, the file(s) most likely responsible, "
+            "and write step-by-step debugging guidance with code snippets. Suggest a fix and generate a PR draft."
+        )
+    elif req.merge_conflict:
+        task = (
+            "Analyze the merge conflict above. Identify which side to keep (or how to combine), explain why, "
+            "and provide step-by-step resolution with the resolved code snippet."
+        )
+    elif repo_data:
+        task = (
+            "The user wants to contribute to this repository but hasn't picked an issue yet. "
+            "Using the README, language breakdown, and the sample of recent open issues, "
+            "produce a SUBSTANTIVE analysis of the project (what it does, architecture clues, key tech) "
+            "and \u2014 critically \u2014 in `solution_steps`, recommend 2-3 SPECIFIC issues from the sample list above "
+            "that are most beginner-friendly. For each recommended issue, cite the issue number, "
+            "explain why it's a good fit, and outline the approach. "
+            "Set `pr_title`/`pr_description` as a TEMPLATE the user can adapt once they pick an issue. "
+            "Do NOT return generic 'clone the repo, create a branch' instructions \u2014 anchor every step to specifics from the README and issues above."
+        )
+    else:
+        task = "Analyze the inputs above and respond with the JSON schema."
+
+    return "\n\n".join(parts) + f"\n\n## Your Task\n{task}\n\nRespond with the JSON schema."
 
 
 # ---------- routes ----------
@@ -362,6 +462,9 @@ async def create_analysis(
         gh_token = current_user.github_access_token  # may be None — public repos still work
 
         issue_data = repo_data = None
+        readme = None
+        top_issues: list = []
+        languages: Dict[str, int] = {}
         async with httpx.AsyncClient(timeout=20.0) as client:
             if issue_parts:
                 owner, repo, num = issue_parts
@@ -371,15 +474,21 @@ async def create_analysis(
                 row.repo_name = f"{owner}/{repo}"
                 # also fetch repo for language
                 repo_data = await _fetch_repo(client, owner, repo, gh_token)
+                languages = await _fetch_languages(client, owner, repo, gh_token)
             elif repo_parts:
                 owner, repo = repo_parts
                 repo_data = await _fetch_repo(client, owner, repo, gh_token)
                 row.repo_name = f"{owner}/{repo}"
+                # Repo-only mode: pull README, languages, and a sample of open issues
+                # so the LLM has real context to produce a substantive analysis.
+                readme = await _fetch_readme(client, owner, repo, gh_token)
+                languages = await _fetch_languages(client, owner, repo, gh_token)
+                top_issues = await _fetch_top_issues(client, owner, repo, gh_token, limit=8)
 
         if repo_data:
             row.repo_language = repo_data.get("language")
 
-        prompt = _build_prompt(body, issue_data, repo_data)
+        prompt = _build_prompt(body, issue_data, repo_data, readme=readme, top_issues=top_issues, languages=languages)
         result = await _call_llm(prompt)
 
         row.summary = result.get("summary")
