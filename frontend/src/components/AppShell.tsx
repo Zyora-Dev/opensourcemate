@@ -345,7 +345,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </header>
 
           {/* Content */}
-          <main className="relative z-10 flex-1 md:ml-[calc(var(--sidebar-w)+12px)] transition-[margin] duration-200 ease-out pt-5 pb-6 md:pb-10">
+          <main className="relative z-10 flex-1 md:ml-[calc(var(--sidebar-w)+12px)] transition-[margin] duration-200 ease-out pt-10 md:pt-12 pb-6 md:pb-10">
             {children}
           </main>
         </div>
