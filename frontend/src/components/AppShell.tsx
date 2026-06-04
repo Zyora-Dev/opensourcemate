@@ -272,7 +272,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           style={{ ["--sidebar-w" as string]: `${sidebarW}px` }}
         >
           {/* Header */}
-          <header className="sticky top-3 z-30 md:ml-[calc(var(--sidebar-w)+12px)] transition-[margin] duration-200 ease-out">
+          <header className="relative z-30 mt-3 md:ml-[calc(var(--sidebar-w)+12px)] transition-[margin] duration-200 ease-out">
             <div className="bg-surface/80 backdrop-blur-xl border border-border rounded-2xl shadow-[0_4px_20px_-8px_rgba(0,0,0,0.5)]">
               <div className="flex items-center justify-between gap-3 px-4 md:px-5 h-14">
                 {/* Mobile menu */}
@@ -345,7 +345,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </header>
 
           {/* Content */}
-          <main className="relative z-10 flex-1 md:ml-[calc(var(--sidebar-w)+12px)] transition-[margin] duration-200 ease-out pt-10 md:pt-12 pb-6 md:pb-10">
+          <main className="relative z-10 flex-1 md:ml-[calc(var(--sidebar-w)+12px)] transition-[margin] duration-200 ease-out pt-6 md:pt-8 pb-6 md:pb-10">
             {children}
           </main>
         </div>
