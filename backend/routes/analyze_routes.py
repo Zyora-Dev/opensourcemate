@@ -111,7 +111,15 @@ CRITICAL OUTPUT RULES:
 - Return a SINGLE valid JSON object. No prose before or after.
 - Inside any string value, you MUST escape newlines as \\n, tabs as \\t, and double-quotes as \\".
 - Never put raw line breaks inside a JSON string.
-- Do not wrap the JSON in markdown fences."""
+- Do not wrap the JSON in markdown fences.
+
+LENGTH LIMITS (HARD — output is capped at 4096 tokens; exceeding these truncates the response):
+- summary: <= 350 characters
+- root_cause: <= 500 characters
+- solution_steps: <= 1800 characters, max 4 steps, keep code snippets compact (<= 8 lines each)
+- pr_description: <= 900 characters with a brief checklist
+- git_commands: <= 6 commands total
+If the problem is complex, summarize the approach instead of pasting long code. Brevity > verbosity."""
 
 
 async def _call_llm(prompt: str) -> Dict[str, Any]:
@@ -202,7 +210,55 @@ def _json_candidates(s: str):
         yield _escape_raw_controls_in_strings(block)
 
     # Same fix on the original
-    yield _escape_raw_controls_in_strings(s)
+    escaped = _escape_raw_controls_in_strings(s)
+    yield escaped
+
+    # Truncation recovery — when the model hit max_tokens mid-string,
+    # close any open string and balance braces/brackets so json.loads can read the partial doc.
+    yield _recover_truncated_json(escaped)
+    # Also try recovery on the {...} block specifically
+    if m:
+        yield _recover_truncated_json(_escape_raw_controls_in_strings(m.group(0)))
+
+
+def _recover_truncated_json(s: str) -> str:
+    """Best-effort close of a JSON doc truncated by max_tokens.
+    Walks the (already control-escaped) string tracking quote/bracket/brace state,
+    then appends the closers needed to make it parseable.
+    """
+    in_str = False
+    esc = False
+    stack: list = []  # holds '{' or '['
+    # Trim trailing partial token (commas/colons hanging in the air)
+    s = s.rstrip()
+    for ch in s:
+        if esc:
+            esc = False
+            continue
+        if ch == "\\":
+            esc = True
+            continue
+        if ch == '"':
+            in_str = not in_str
+            continue
+        if in_str:
+            continue
+        if ch == '{' or ch == '[':
+            stack.append(ch)
+        elif ch == '}' or ch == ']':
+            if stack:
+                stack.pop()
+    out = s
+    # Close an open string
+    if in_str:
+        out += '"'
+    # Drop a trailing comma or colon before closing containers
+    out = re.sub(r"[,:]\s*$", "", out)
+    # Close containers in reverse order
+    closers = {'{': '}', '[': ']'}
+    while stack:
+        out += closers[stack.pop()]
+    return out
 
 
 def _escape_raw_controls_in_strings(s: str) -> str:
