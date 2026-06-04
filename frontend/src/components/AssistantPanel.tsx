@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FiMessageCircle, FiX, FiSend, FiLoader, FiZap, FiCpu, FiUser, FiAlertCircle,
@@ -29,6 +30,7 @@ const STARTERS = [
 
 export function AssistantPanel({ analysisId, contextLabel }: AssistantPanelProps) {
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const [token, setToken] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -37,21 +39,24 @@ export function AssistantPanel({ analysisId, contextLabel }: AssistantPanelProps
   const [error, setError] = useState<string | null>(null);
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
+  const historyLoadedRef = useRef(false);
 
-  // Pull token once
+  // Mount + pull token once (client only — portal needs document)
   useEffect(() => {
+    setMounted(true);
     setToken(localStorage.getItem("token"));
   }, []);
 
-  // Lazy-load history first time the panel opens
+  // Lazy-load history the FIRST time the panel opens (idempotent via ref)
   useEffect(() => {
-    if (!open || !token || messages.length > 0 || loadingHistory) return;
+    if (!open || !token || historyLoadedRef.current) return;
+    historyLoadedRef.current = true;
     setLoadingHistory(true);
     api.listChatMessages(analysisId, token)
-      .then((m: ChatMessage[]) => setMessages(m || []))
+      .then((m: ChatMessage[]) => setMessages(Array.isArray(m) ? m : []))
       .catch(() => { /* silent — empty history is fine */ })
       .finally(() => setLoadingHistory(false));
-  }, [open, token, analysisId, messages.length, loadingHistory]);
+  }, [open, token, analysisId]);
 
   // Auto-scroll to bottom on new messages / when opening
   useEffect(() => {
@@ -118,7 +123,9 @@ export function AssistantPanel({ analysisId, contextLabel }: AssistantPanelProps
     }
   }
 
-  return (
+  if (!mounted) return null;
+
+  const ui = (
     <>
       {/* Floating launcher (visible when panel is closed) */}
       <AnimatePresence>
@@ -130,7 +137,7 @@ export function AssistantPanel({ analysisId, contextLabel }: AssistantPanelProps
             exit={{ opacity: 0, scale: 0.85, y: 12 }}
             transition={{ type: "spring", stiffness: 320, damping: 24 }}
             onClick={() => setOpen(true)}
-            className="fixed bottom-5 right-5 z-40 inline-flex items-center gap-2 h-12 pl-4 pr-5 rounded-full bg-crimson text-white shadow-[0_10px_30px_-8px_rgba(217,119,87,0.6)] hover:shadow-[0_12px_36px_-6px_rgba(217,119,87,0.7)] hover:bg-crimson-dark transition-all glow-crimson"
+            className="fixed bottom-5 right-5 z-[80] inline-flex items-center gap-2 h-12 pl-4 pr-5 rounded-full bg-crimson text-white shadow-[0_10px_30px_-8px_rgba(217,119,87,0.6)] hover:shadow-[0_12px_36px_-6px_rgba(217,119,87,0.7)] hover:bg-crimson-dark transition-all glow-crimson"
             aria-label="Open AI assistant"
           >
             <span className="relative w-7 h-7 rounded-full bg-white/15 flex items-center justify-center">
@@ -146,7 +153,7 @@ export function AssistantPanel({ analysisId, contextLabel }: AssistantPanelProps
       <AnimatePresence>
         {open && (
           <>
-            {/* Backdrop only on mobile to avoid covering the analysis content on desktop */}
+            {/* Full backdrop on every breakpoint — dims the entire app behind the panel */}
             <motion.div
               key="backdrop"
               initial={{ opacity: 0 }}
@@ -154,7 +161,7 @@ export function AssistantPanel({ analysisId, contextLabel }: AssistantPanelProps
               exit={{ opacity: 0 }}
               transition={{ duration: 0.15 }}
               onClick={() => setOpen(false)}
-              className="md:hidden fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
+              className="fixed inset-0 z-[90] bg-black/50 backdrop-blur-sm"
             />
 
             <motion.aside
@@ -163,7 +170,7 @@ export function AssistantPanel({ analysisId, contextLabel }: AssistantPanelProps
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: "100%", opacity: 0 }}
               transition={{ type: "spring", stiffness: 320, damping: 32 }}
-              className="fixed top-0 right-0 bottom-0 z-50 w-full sm:w-[420px] md:w-[460px] flex flex-col bg-background border-l border-border shadow-[-20px_0_60px_-20px_rgba(0,0,0,0.6)]"
+              className="fixed top-0 right-0 bottom-0 z-[100] w-full sm:w-[420px] md:w-[460px] flex flex-col bg-background border-l border-border shadow-[-20px_0_60px_-20px_rgba(0,0,0,0.6)]"
               role="dialog"
               aria-label="AI assistant"
             >
@@ -247,6 +254,9 @@ export function AssistantPanel({ analysisId, contextLabel }: AssistantPanelProps
       </AnimatePresence>
     </>
   );
+
+  // Portal to body so we escape any ancestor stacking contexts (e.g. AppShell <main>)
+  return createPortal(ui, document.body);
 }
 
 /* ---------------- internals ---------------- */
