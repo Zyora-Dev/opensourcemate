@@ -463,6 +463,13 @@ async def run_contribution_flow(
             run.steps = json.dumps(steps)
             db.commit()
             db.refresh(run)
+
+            # Arena: award points for opening a PR (idempotent on run.id).
+            try:
+                import arena as _arena
+                _arena.award_pr_opened(db, run.user_id, run.id, run.pr_number)
+            except Exception:
+                pass
             return run
 
     except HTTPException as e:
@@ -544,6 +551,12 @@ async def get_latest_contribution(
                                 _sql("UPDATE analysis_embeddings SET pr_merged = TRUE WHERE analysis_id = :aid"),
                                 {"aid": analysis.id},
                             )
+                        except Exception:
+                            pass
+                        # Arena: award merge points (idempotent on run.id).
+                        try:
+                            import arena as _arena
+                            _arena.award_pr_merged(db, run.user_id, run.id, run.pr_number)
                         except Exception:
                             pass
                     else:

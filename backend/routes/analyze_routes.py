@@ -876,6 +876,13 @@ async def create_analysis(
         row.code_suggestions = json.dumps(clean_cs) if clean_cs else None
         row.status = "done"
 
+        # Arena: award points for completing an analysis (idempotent on analysis_id).
+        try:
+            import arena as _arena
+            _arena.award_analysis_done(db, row.user_id, row.id)
+        except Exception:
+            pass
+
     except HTTPException:
         row.status = "error"
         db.commit()

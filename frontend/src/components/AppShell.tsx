@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import {
-  FiHome, FiZap, FiClock, FiUser, FiLogOut, FiCode, FiGithub, FiAward,
+  FiHome, FiZap, FiClock, FiUser, FiLogOut, FiCode, FiGithub, FiAward, FiActivity,
   FiChevronLeft, FiChevronRight, FiBell, FiSearch, FiMenu, FiX,
 } from "react-icons/fi";
 import {
@@ -24,6 +24,7 @@ const NAV = [
   { href: "/dashboard",       label: "Dashboard", icon: FiHome },
   { href: "/analyze",         label: "Analyze",   icon: FiZap  },
   { href: "/analyze/history", label: "History",   icon: FiClock },
+  { href: "/arena",           label: "Arena",     icon: FiActivity },
   { href: "/learning",        label: "Learning",  icon: FiAward },
   { href: "/profile",         label: "Profile",   icon: FiUser },
 ];
@@ -32,6 +33,7 @@ const TITLES: Record<string, string> = {
   "/dashboard": "Dashboard",
   "/analyze": "New analysis",
   "/analyze/history": "Analysis history",
+  "/arena": "Arena",
   "/learning": "Learning & growth",
   "/profile": "Profile",
 };

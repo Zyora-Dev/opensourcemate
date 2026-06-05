@@ -127,6 +127,11 @@ export const api = {
 
   // Stage 7 — Learning & tracking
   getLearning: (token: string) => getJson("/learning/", token),
+
+  // Arena — personal points & activity (no leaderboard)
+  arenaMe: (token: string) => getJson("/arena/me", token),
+  arenaActivity: (token: string, days = 365) => getJson(`/arena/activity?days=${days}`, token),
+  arenaFeed: (token: string, limit = 25) => getJson(`/arena/feed?limit=${limit}`, token),
 };
 
 // Helper to resolve avatar URLs returned by the API.

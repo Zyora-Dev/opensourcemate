@@ -137,3 +137,24 @@ class EmailOTP(Base):
     attempts = Column(Integer, default=0, nullable=False)
     expires_at = Column(DateTime(timezone=True), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class ArenaEvent(Base):
+    """A single point-earning event for the Arena leaderboard.
+
+    Events are immutable facts. Aggregations (totals, weekly, streaks) run on top.
+    `event_type` is one of: daily_login | analysis_done | pr_opened | pr_merged.
+    `ref_id` is the foreign id (analysis_id or contribution_run id) so we can
+    deduplicate awards (e.g. don't double-award if the merge poll runs twice).
+    """
+    __tablename__ = "arena_events"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    event_type = Column(String, nullable=False, index=True)
+    points = Column(Integer, nullable=False, default=0)
+    ref_id = Column(Integer, nullable=True)            # analysis_id, contribution_run.id, or null
+    note = Column(String, nullable=True)               # short human-readable label
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+    user = relationship("User")
