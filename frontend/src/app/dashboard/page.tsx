@@ -444,7 +444,10 @@ export default function DashboardPage() {
                     <>Profile is complete. Track your first issue to start building your contribution history.</>
                   )}
                 </p>
-                <button className="mt-4 inline-flex items-center gap-1.5 text-xs bg-crimson hover:bg-crimson-dark text-white px-3 h-8 rounded-md font-medium transition-all">
+                <button
+                  onClick={() => router.push(profileCompletion < 100 ? "/profile" : "/analyze")}
+                  className="mt-4 inline-flex items-center gap-1.5 text-xs bg-crimson hover:bg-crimson-dark text-white px-3 h-8 rounded-md font-medium transition-all"
+                >
                   <FiTerminal size={12} /> {profileCompletion < 100 ? "Complete profile" : "Open guided session"}
                 </button>
               </div>
