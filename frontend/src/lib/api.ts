@@ -105,6 +105,12 @@ export const api = {
     getJson(`/analyze/${analysisId}/chat`, token),
   sendChatMessage: (analysisId: number, message: string, token: string) =>
     req(`/analyze/${analysisId}/chat`, { message }, token),
+
+  // Stage 6 — Automated contribution flow (fork → branch → commit → push → PR)
+  startContribution: (analysisId: number, token: string) =>
+    req(`/analyze/${analysisId}/contribute`, {}, token),
+  getContribution: (analysisId: number, token: string) =>
+    getJson(`/analyze/${analysisId}/contribute`, token),
 };
 
 // Helper to resolve avatar URLs returned by the API.

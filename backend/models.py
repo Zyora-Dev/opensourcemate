@@ -87,3 +87,31 @@ class AnalysisMessage(Base):
     role = Column(String, nullable=False)  # "user" | "assistant"
     content = Column(Text, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class ContributionRun(Base):
+    """Tracks one automated contribution attempt (Stage 6 of the OSM flow).
+
+    Each row records: fork → branch → commit → push → open PR. Steps stores a
+    JSON list of {step, status, detail, at} entries so the UI can render a
+    real stepper instead of guessing.
+    """
+    __tablename__ = "contribution_runs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    analysis_id = Column(Integer, ForeignKey("analyses.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+
+    status = Column(String, default="pending")   # pending | running | success | partial | failed
+    fork_repo = Column(String, nullable=True)    # "login/repo" actually used for commits
+    branch_name = Column(String, nullable=True)
+    pr_url = Column(String, nullable=True)
+    pr_number = Column(Integer, nullable=True)
+    files_changed = Column(Integer, default=0)
+    files_skipped = Column(Integer, default=0)
+    steps = Column(Text, nullable=True)          # JSON: [{step,status,detail,at}]
+    error = Column(Text, nullable=True)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    completed_at = Column(DateTime(timezone=True), nullable=True)
+

@@ -118,3 +118,22 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     user_message: ChatMessage
     assistant_message: ChatMessage
+
+
+class ContributionRunResponse(BaseModel):
+    id: int
+    analysis_id: int
+    status: str
+    fork_repo: Optional[str] = None
+    branch_name: Optional[str] = None
+    pr_url: Optional[str] = None
+    pr_number: Optional[int] = None
+    files_changed: int = 0
+    files_skipped: int = 0
+    steps: Optional[str] = None
+    error: Optional[str] = None
+    created_at: datetime
+    completed_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True

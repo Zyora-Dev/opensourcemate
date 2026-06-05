@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Markdown } from "@/components/Markdown";
 import { AssistantPanel } from "@/components/AssistantPanel";
 import { parseSections, SectionCard, SectionNav, getSectionMeta } from "@/components/AnalysisSections";
+import { ContributionFlow } from "@/components/ContributionFlow";
 
 interface Analysis {
   id: number;
@@ -334,6 +335,13 @@ export default function AnalysisResultPage({ params }: { params: Promise<{ id: s
             </div>
           </motion.section>
         )}
+
+        {/* Stage 6 — Automated contribution flow (fork → branch → commit → push → PR) */}
+        <ContributionFlow
+          analysisId={data.id}
+          hasSuggestions={suggestions.length > 0}
+          repoLabel={data.repo_name || undefined}
+        />
 
         {/* Git commands */}
         {cmds.length > 0 && (
