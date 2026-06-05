@@ -30,6 +30,9 @@ interface ContributionRun {
   branch_name?: string | null;
   pr_url?: string | null;
   pr_number?: number | null;
+  pr_state?: string | null;        // open | closed | merged
+  pr_merged_at?: string | null;
+  pr_checked_at?: string | null;
   files_changed: number;
   files_skipped: number;
   steps?: string | null;   // JSON string of BackendStep[]
@@ -244,14 +247,30 @@ export function ContributionFlow({ analysisId, hasSuggestions, repoLabel }: Prop
         <div className="px-6 py-5 border-t border-border space-y-3">
           {(finalStatus === "success" || finalStatus === "partial") && run.pr_url && (
             <div className={`rounded-lg border px-4 py-3 ${
-              finalStatus === "success"
+              run.pr_state === "merged"
+                ? "border-violet-500/40 bg-violet-500/10"
+                : finalStatus === "success"
                 ? "border-emerald-500/30 bg-emerald-500/10"
                 : "border-amber-500/30 bg-amber-500/10"
             }`}>
               <div className="flex items-start justify-between gap-3 flex-wrap">
                 <div className="min-w-0">
-                  <p className={`text-sm font-semibold ${finalStatus === "success" ? "text-emerald-200" : "text-amber-200"}`}>
-                    {finalStatus === "success" ? "Pull request opened" : "Pull request opened (with skipped files)"}
+                  <p className={`text-sm font-semibold flex items-center gap-2 ${
+                    run.pr_state === "merged" ? "text-violet-200" :
+                    finalStatus === "success" ? "text-emerald-200" : "text-amber-200"
+                  }`}>
+                    {run.pr_state === "merged"
+                      ? "🎉 Pull request merged"
+                      : run.pr_state === "closed"
+                      ? "Pull request closed (not merged)"
+                      : finalStatus === "success"
+                      ? "Pull request opened"
+                      : "Pull request opened (with skipped files)"}
+                    {run.pr_state && run.pr_state !== "open" && (
+                      <span className="text-[10px] uppercase tracking-wider font-mono px-1.5 py-0.5 rounded border border-current/40">
+                        {run.pr_state}
+                      </span>
+                    )}
                   </p>
                   <p className="text-[12.5px] text-white/75 mt-0.5">
                     {run.files_changed} file(s) committed

@@ -333,7 +333,7 @@ LENGTH LIMITS (HARD — output is capped; exceeding these truncates the response
 If the problem is complex, summarize the approach instead of pasting long code. Brevity > verbosity, but be SUBSTANTIVE — do NOT return generic "clone the repo, create branch" boilerplate. Always anchor steps to the specific code, files, error, or issue described."""
 
 
-async def _call_llm(prompt: str) -> Dict[str, Any]:
+async def _call_llm(prompt: str, extra_system: str = "") -> Dict[str, Any]:
     # ---- Provider-specific URL + auth headers ----
     if LLM_PROVIDER == "azure":
         if not (AZURE_OPENAI_ENDPOINT and AZURE_OPENAI_API_KEY and AZURE_OPENAI_DEPLOYMENT):
@@ -360,12 +360,16 @@ async def _call_llm(prompt: str) -> Dict[str, Any]:
         auth_headers = {"Authorization": f"Bearer {LLM_API_KEY}"}
         model_for_payload = LLM_MODEL
 
+    # Phase B — retrieved-context system message goes BEFORE the static prompt
+    # so the model treats it as background, not as instructions.
+    messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+    if extra_system:
+        messages.append({"role": "system", "content": extra_system})
+    messages.append({"role": "user", "content": prompt + "\n\nRespond with valid JSON only — no markdown, no prose."})
+
     base_payload = {
         "model": model_for_payload,
-        "messages": [
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": prompt + "\n\nRespond with valid JSON only — no markdown, no prose."},
-        ],
+        "messages": messages,
         "temperature": 0.3,
         # Generous cap — Azure gpt-4.1-mini, OpenAI, and Llama all handle 8000 fine.
         # Cloudflare 8B truncates around 4096 but we have recovery for that.
@@ -814,7 +818,27 @@ async def create_analysis(
             root_tree=root_tree, good_first_issues=good_first,
             contributing=contributing, recent_commits=recent_commits,
         )
-        result = await _call_llm(prompt)
+
+        # Phase B — inject retrieved past-resolution context (no-op if RAG disabled).
+        rag_block = ""
+        try:
+            from rag import retrieve_similar, format_context_block
+            query_for_rag = "\n".join(filter(None, [
+                row.issue_title or "",
+                _truncate(row.issue_body, 1500) if row.issue_body else "",
+                _truncate(row.error_log, 1500) if row.error_log else "",
+                _truncate(row.merge_conflict, 1500) if row.merge_conflict else "",
+                row.repo_name or "",
+            ]))
+            hits = await retrieve_similar(
+                db, user_id=current_user.id, query_text=query_for_rag,
+                k_personal=3, k_global=2,
+            )
+            rag_block = format_context_block(hits)
+        except Exception as _rag_err:  # noqa: BLE001
+            log.info("RAG retrieval skipped: %s", _rag_err)
+
+        result = await _call_llm(prompt, extra_system=rag_block)
 
         row.summary = _to_text(result.get("summary"))
         row.difficulty = (result.get("difficulty") or "").lower() or None
@@ -865,6 +889,16 @@ async def create_analysis(
 
     db.commit()
     db.refresh(row)
+
+    # Phase B — embed this completed analysis for future RAG hits.
+    # No-op if RAG isn't enabled. Best-effort — never fails the analyze response.
+    try:
+        from rag import embed_and_store
+        is_priv = bool(repo_data and repo_data.get("private"))
+        await embed_and_store(db, row, is_private=is_priv, pr_merged=False)
+    except Exception as _emb_err:  # noqa: BLE001
+        log.info("RAG embed skipped: %s", _emb_err)
+
     return row
 
 

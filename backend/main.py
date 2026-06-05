@@ -23,6 +23,14 @@ Base.metadata.create_all(bind=engine)
 # Lightweight idempotent migrations (additive columns only — never drop)
 with engine.begin() as conn:
     conn.execute(text("ALTER TABLE analyses ADD COLUMN IF NOT EXISTS code_suggestions TEXT"))
+    # Phase C — PR state polling columns on contribution_runs
+    conn.execute(text("ALTER TABLE contribution_runs ADD COLUMN IF NOT EXISTS pr_state TEXT"))
+    conn.execute(text("ALTER TABLE contribution_runs ADD COLUMN IF NOT EXISTS pr_merged_at TIMESTAMPTZ"))
+    conn.execute(text("ALTER TABLE contribution_runs ADD COLUMN IF NOT EXISTS pr_checked_at TIMESTAMPTZ"))
+
+# RAG (Stage 8 — Phase B). Soft-fails if pgvector isn't installed at the DB level.
+import rag as _rag  # noqa: E402
+_rag.init_extension(engine)
 
 app = FastAPI(title="OpenSourceMate API")
 

@@ -506,4 +506,52 @@ async def get_latest_contribution(
         .order_by(models.ContributionRun.id.desc())
         .first()
     )
+
+    # Phase C — best-effort PR state refresh (at most once per 10 min, never if already merged).
+    if (
+        run
+        and run.pr_url
+        and run.pr_number
+        and user.github_access_token
+        and getattr(run, "pr_state", None) != "merged"
+    ):
+        last = getattr(run, "pr_checked_at", None)
+        stale = (not last) or ((datetime.now(timezone.utc) - last).total_seconds() > 600)
+        if stale:
+            try:
+                upstream_owner, upstream_repo = _parse_repo(analysis.repo_url or analysis.issue_url)
+                async with httpx.AsyncClient() as client:
+                    pr_r = await _gh(
+                        client, "GET",
+                        f"/repos/{upstream_owner}/{upstream_repo}/pulls/{run.pr_number}",
+                        user.github_access_token, allow_404=True,
+                    )
+                if pr_r.status_code == 200:
+                    pr = pr_r.json()
+                    if pr.get("merged"):
+                        run.pr_state = "merged"
+                        merged_at = pr.get("merged_at")
+                        if merged_at:
+                            try:
+                                run.pr_merged_at = datetime.fromisoformat(merged_at.replace("Z", "+00:00"))
+                            except Exception:
+                                pass
+                        # Mark the corresponding embedding row as merged so it
+                        # becomes eligible for cross-user RAG retrieval.
+                        try:
+                            from sqlalchemy import text as _sql
+                            db.execute(
+                                _sql("UPDATE analysis_embeddings SET pr_merged = TRUE WHERE analysis_id = :aid"),
+                                {"aid": analysis.id},
+                            )
+                        except Exception:
+                            pass
+                    else:
+                        run.pr_state = pr.get("state") or "open"  # open | closed
+                    run.pr_checked_at = datetime.now(timezone.utc)
+                    db.commit()
+                    db.refresh(run)
+            except Exception as e:  # noqa: BLE001
+                log.info("PR state refresh skipped: %s", e)
+
     return run

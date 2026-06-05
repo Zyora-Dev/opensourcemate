@@ -128,6 +128,9 @@ class ContributionRunResponse(BaseModel):
     branch_name: Optional[str] = None
     pr_url: Optional[str] = None
     pr_number: Optional[int] = None
+    pr_state: Optional[str] = None
+    pr_merged_at: Optional[datetime] = None
+    pr_checked_at: Optional[datetime] = None
     files_changed: int = 0
     files_skipped: int = 0
     steps: Optional[str] = None

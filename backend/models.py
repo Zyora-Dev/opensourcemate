@@ -107,6 +107,9 @@ class ContributionRun(Base):
     branch_name = Column(String, nullable=True)
     pr_url = Column(String, nullable=True)
     pr_number = Column(Integer, nullable=True)
+    pr_state = Column(String, nullable=True)     # open | closed | merged (refreshed by poll)
+    pr_merged_at = Column(DateTime(timezone=True), nullable=True)
+    pr_checked_at = Column(DateTime(timezone=True), nullable=True)
     files_changed = Column(Integer, default=0)
     files_skipped = Column(Integer, default=0)
     steps = Column(Text, nullable=True)          # JSON: [{step,status,detail,at}]

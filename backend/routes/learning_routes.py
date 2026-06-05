@@ -290,3 +290,40 @@ def get_learning_summary(
         "badges_total": len(badges),
         "generated_at": now.isoformat(),
     }
+
+
+@router.post("/embeddings/backfill")
+async def backfill_embeddings(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """
+    Re-embed every completed analysis owned by the signed-in user. Useful right
+    after RAG is enabled to seed the vector index. Returns count + any failures.
+    No-op (200 + skipped=N) if RAG isn't enabled.
+    """
+    try:
+        from rag import is_enabled as _rag_on, embed_and_store
+    except Exception as e:  # noqa: BLE001
+        return {"enabled": False, "embedded": 0, "skipped": 0, "reason": f"rag import failed: {e}"}
+
+    if not _rag_on():
+        return {"enabled": False, "embedded": 0, "skipped": 0, "reason": "RAG not configured"}
+
+    rows = (
+        db.query(models.Analysis)
+        .filter(
+            models.Analysis.user_id == current_user.id,
+            models.Analysis.status == "done",
+        )
+        .all()
+    )
+    embedded = 0
+    skipped = 0
+    for a in rows:
+        ok = await embed_and_store(db, a, is_private=False, pr_merged=False)
+        if ok:
+            embedded += 1
+        else:
+            skipped += 1
+    return {"enabled": True, "embedded": embedded, "skipped": skipped, "total": len(rows)}
