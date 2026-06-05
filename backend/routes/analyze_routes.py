@@ -961,15 +961,32 @@ def delete_analysis(
 
 CHAT_SYSTEM = """You are OpenSourceMate's friendly contribution coach.
 A student or junior developer is looking at an AI analysis of a GitHub issue / repo / error / merge conflict and has follow-up questions.
-You have FULL CONTEXT of that analysis below. Stay grounded in it — refer to specific files, steps, code suggestions, and commands from the context. Don't invent file paths or facts not present in the context.
+You have FULL CONTEXT of that analysis below, plus (when available):
+  • the user's automated **contribution run** (branch, PR number/URL, PR state, merge status, errors) — Stage 6
+  • the user's **learning profile** (level, points, streak, recent earned events) — Stage 7
+  • **similar past resolutions** retrieved from their history and from the wider community's merged PRs — Stage 8
+
+Stay grounded in the provided context — refer to specific files, steps, code suggestions, commands, PR details, and lessons from past resolutions. Don't invent file paths, PR numbers, or facts not present in the context. If asked about PR status, quote the `PR state` / `Merged at` fields verbatim. If asked "how am I doing?", reference the learning profile.
 
 Be concise: 2-6 short paragraphs OR a tight bulleted list. Use markdown. Use fenced code blocks with a language tag for any code. If the user asks something unrelated to programming/contribution, gently redirect.
 
 If you genuinely don't know, say so and suggest where they could look. Never produce fake links."""
 
 
-def _build_chat_context(a: models.Analysis) -> str:
-    """Compact, structured context for the chat assistant."""
+def _build_chat_context(
+    a: models.Analysis,
+    db: Optional[Session] = None,
+    user: Optional[models.User] = None,
+) -> str:
+    """Compact, structured context for the chat assistant.
+
+    Pulls from:
+      * the analysis row (Stages 3–5)
+      * the latest ContributionRun for this analysis (Stage 6)
+      * the user's arena/learning profile (Stage 7)
+    Stage 8 (RAG-retrieved similar past resolutions) is appended per-turn
+    in `send_chat_message`, since it depends on the user's question.
+    """
     lines = ["# Analysis context"]
     if a.repo_name:
         lines.append(f"- Repo: {a.repo_name}")
@@ -1021,6 +1038,70 @@ def _build_chat_context(a: models.Analysis) -> str:
     if a.merge_conflict:
         snippet = a.merge_conflict[:1500] + ("\n…[truncated]" if len(a.merge_conflict) > 1500 else "")
         lines.append("\n## User-provided merge conflict\n```\n" + snippet + "\n```")
+
+    # ── Stage 6 — Contribution status (latest ContributionRun for this analysis) ──
+    if db is not None:
+        try:
+            run = (
+                db.query(models.ContributionRun)
+                .filter(models.ContributionRun.analysis_id == a.id)
+                .order_by(models.ContributionRun.id.desc())
+                .first()
+            )
+            if run is not None:
+                cl = ["\n## Contribution status (Stage 6)"]
+                cl.append(f"- Run status: **{run.status or 'pending'}**")
+                if run.fork_repo:
+                    cl.append(f"- Fork: `{run.fork_repo}`")
+                if run.branch_name:
+                    cl.append(f"- Branch: `{run.branch_name}`")
+                if run.pr_number:
+                    cl.append(f"- PR number: #{run.pr_number}")
+                if run.pr_url:
+                    cl.append(f"- PR URL: {run.pr_url}")
+                if run.pr_state:
+                    cl.append(f"- PR state: **{run.pr_state}**")
+                if run.pr_merged_at:
+                    cl.append(f"- Merged at: {run.pr_merged_at.isoformat()}")
+                if run.files_changed is not None:
+                    cl.append(f"- Files changed: {run.files_changed} (skipped: {run.files_skipped or 0})")
+                if run.error:
+                    err = run.error[:400] + ("…" if len(run.error) > 400 else "")
+                    cl.append(f"- Last error: {err}")
+                lines.append("\n".join(cl))
+        except Exception as _e:
+            log.info("chat_ctx: contribution status block skipped: %s", _e)
+
+    # ── Stage 7 — User's learning / arena profile ──
+    if db is not None and user is not None:
+        try:
+            import arena as _arena
+            summary = _arena.me_summary(db, user.id)
+            lvl = summary.get("level") or {}
+            pl = ["\n## Your learning profile (Stage 7)"]
+            pl.append(f"- Total points: **{summary.get('total_points', 0)}**")
+            if lvl.get("name"):
+                pl.append(
+                    f"- Level: **{lvl.get('name')}**"
+                    + (f" → next: {lvl.get('next_name')} at {lvl.get('next_floor')} pts"
+                       if lvl.get('next_name') else " (max tier)")
+                )
+            pl.append(
+                f"- Streak: {summary.get('streak_days', 0)} day(s) "
+                f"(longest: {summary.get('longest_streak', 0)})"
+            )
+            pl.append(
+                f"- Activity: {summary.get('weekly_points', 0)} pts this week, "
+                f"{summary.get('monthly_points', 0)} pts this month"
+            )
+            bd = summary.get("breakdown") or {}
+            if bd:
+                bd_parts = [f"{k}: {v}" for k, v in bd.items() if v]
+                if bd_parts:
+                    pl.append("- Earned events: " + ", ".join(bd_parts))
+            lines.append("\n".join(pl))
+        except Exception as _e:
+            log.info("chat_ctx: learning profile block skipped: %s", _e)
 
     return "\n".join(lines)
 
@@ -1085,8 +1166,31 @@ async def send_chat_message(
     # keep last 20 turns
     history = history[-20:]
 
+    # ── Stage 8 — RAG: pull similar past resolutions for THIS question ──
+    rag_block = ""
+    try:
+        from rag import retrieve_similar, format_context_block
+        # Bias the query toward the user's current question, anchored with repo+issue.
+        query_for_rag = "\n".join(filter(None, [
+            user_text,
+            a.issue_title or "",
+            _truncate(a.issue_body, 800) if a.issue_body else "",
+            a.repo_name or "",
+        ]))
+        hits = await retrieve_similar(
+            db, user_id=current_user.id, query_text=query_for_rag,
+            k_personal=2, k_global=2,
+        )
+        rag_block = format_context_block(hits)
+    except Exception as _rag_err:  # noqa: BLE001
+        log.info("Chat RAG retrieval skipped: %s", _rag_err)
+
+    system_payload = CHAT_SYSTEM + "\n\n" + _build_chat_context(a, db=db, user=current_user)
+    if rag_block:
+        system_payload += "\n\n" + rag_block
+
     messages = [
-        {"role": "system", "content": CHAT_SYSTEM + "\n\n" + _build_chat_context(a)},
+        {"role": "system", "content": system_payload},
     ]
     for m in history:
         messages.append({"role": m.role, "content": m.content})
