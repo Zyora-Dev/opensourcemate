@@ -68,3 +68,7 @@ body {
 .radial-fade {
   background: radial-gradient(ellipse 60% 50% at 50% 0%, rgba(217, 119, 87, 0.12), transparent 70%);
 }
+
+/* Hide horizontal scrollbar on the section-nav pill row */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

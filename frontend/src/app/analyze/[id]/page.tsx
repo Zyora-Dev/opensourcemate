@@ -4,13 +4,14 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   FiArrowLeft, FiLoader, FiAlertCircle, FiCheck, FiCopy,
-  FiTerminal, FiFileText, FiCode, FiGitPullRequest, FiZap, FiTrash2,
+  FiTerminal, FiFileText, FiGitPullRequest, FiZap, FiTrash2,
   FiFile, FiMinus, FiPlus,
 } from "react-icons/fi";
 import { api } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { Markdown } from "@/components/Markdown";
 import { AssistantPanel } from "@/components/AssistantPanel";
+import { parseSections, SectionCard, SectionNav, getSectionMeta } from "@/components/AnalysisSections";
 
 interface Analysis {
   id: number;
@@ -115,6 +116,10 @@ export default function AnalysisResultPage({ params }: { params: Promise<{ id: s
       if (Array.isArray(raw)) suggestions = raw as CodeSuggestion[];
     } catch { /* ignore parse errors */ }
   }
+
+  // Split solution_steps markdown into discrete H2 sections, sorted by priority.
+  const rawSections = parseSections(data.solution_steps);
+  const sections = [...rawSections].sort((a, b) => getSectionMeta(a.title).priority - getSectionMeta(b.title).priority);
 
   return (
     <div className="max-w-5xl mx-auto px-3 md:px-6 space-y-5">
@@ -223,30 +228,16 @@ export default function AnalysisResultPage({ params }: { params: Promise<{ id: s
           )}
         </div>
 
-        {/* Solution */}
-        {data.solution_steps && (
-          <motion.section initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
-            className="bg-surface border border-border rounded-2xl overflow-hidden">
-            <header className="flex items-center justify-between px-6 py-4 border-b border-border">
-              <div className="flex items-center gap-2">
-                <span className="w-7 h-7 rounded-md bg-crimson/10 border border-crimson/20 text-crimson flex items-center justify-center">
-                  <FiCode size={13} />
-                </span>
-                <div>
-                  <h3 className="text-sm font-semibold">Step-by-step solution</h3>
-                  <p className="text-[11px] text-muted-foreground">Stage 4 · Smart guidance</p>
-                </div>
-              </div>
-              <button onClick={() => copy(data.solution_steps || "", "sol")}
-                className="text-xs text-muted-foreground hover:text-crimson transition-colors inline-flex items-center gap-1">
-                {copied === "sol" ? <FiCheck size={11} /> : <FiCopy size={11} />}
-                {copied === "sol" ? "Copied" : "Copy"}
-              </button>
-            </header>
-            <div className="p-6">
-              <Markdown>{data.solution_steps}</Markdown>
+        {/* Solution — each H2 of solution_steps becomes its own elegant collapsible card */}
+        {sections.length > 0 && (
+          <>
+            <SectionNav sections={sections} />
+            <div className="space-y-3.5">
+              {sections.map((s) => (
+                <SectionCard key={s.id} section={s} defaultOpen={getSectionMeta(s.title).defaultOpen} />
+              ))}
             </div>
-          </motion.section>
+          </>
         )}
 
         {/* Code canvas — concrete code suggestions with file location + before/after */}
