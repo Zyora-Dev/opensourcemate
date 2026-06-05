@@ -17,7 +17,7 @@ logger = logging.getLogger("email_service")
 ZEPTO_HOST = os.getenv("ZEPTO_HOST", "api.zeptomail.in")
 ZEPTO_TOKEN = os.getenv("ZEPTO_TOKEN", "")  # full "Zoho-enczapikey ..." string
 ZEPTO_FROM_ADDRESS = os.getenv("ZEPTO_FROM_ADDRESS", "welcome@opensourcemate.in")
-ZEPTO_FROM_NAME = os.getenv("ZEPTO_FROM_NAME", "OpenSourceMate")
+ZEPTO_FROM_NAME = os.getenv("ZEPTO_FROM_NAME", "OpensourceMate")
 APP_BASE_URL = os.getenv("APP_BASE_URL", "https://opensourcemate.in")
 
 _BRAND_PRIMARY = "#d97757"  # crimson — matches frontend
