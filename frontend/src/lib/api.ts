@@ -111,6 +111,9 @@ export const api = {
     req(`/analyze/${analysisId}/contribute`, {}, token),
   getContribution: (analysisId: number, token: string) =>
     getJson(`/analyze/${analysisId}/contribute`, token),
+
+  // Stage 7 — Learning & tracking
+  getLearning: (token: string) => getJson("/learning/", token),
 };
 
 // Helper to resolve avatar URLs returned by the API.
