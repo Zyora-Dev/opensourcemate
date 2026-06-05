@@ -48,7 +48,11 @@ except Exception as e:  # noqa: BLE001
 AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT", "").rstrip("/")
 AZURE_OPENAI_API_KEY = os.getenv("AZURE_OPENAI_API_KEY", "")
 AZURE_OPENAI_EMBED_DEPLOYMENT = os.getenv("AZURE_OPENAI_EMBED_DEPLOYMENT", "")
-AZURE_OPENAI_API_VERSION = os.getenv("AZURE_OPENAI_API_VERSION", "2024-10-21")
+# Embeddings can use a different api-version from chat. Default to a stable one.
+AZURE_OPENAI_EMBED_API_VERSION = os.getenv(
+    "AZURE_OPENAI_EMBED_API_VERSION",
+    os.getenv("AZURE_OPENAI_API_VERSION", "2024-02-01"),
+)
 
 EMBED_DIM = 1536  # text-embedding-3-small
 _EXTENSION_OK = False  # flips True after init_extension succeeds
@@ -136,7 +140,7 @@ async def embed(text_in: str) -> Optional[List[float]]:
 
     url = (
         f"{AZURE_OPENAI_ENDPOINT}/openai/deployments/"
-        f"{AZURE_OPENAI_EMBED_DEPLOYMENT}/embeddings?api-version={AZURE_OPENAI_API_VERSION}"
+        f"{AZURE_OPENAI_EMBED_DEPLOYMENT}/embeddings?api-version={AZURE_OPENAI_EMBED_API_VERSION}"
     )
     try:
         async with httpx.AsyncClient(timeout=20.0) as client:
