@@ -94,11 +94,14 @@ def _award(
     event_type: str,
     ref_id: Optional[int],
     note: Optional[str] = None,
+    created_at: Optional[datetime] = None,
 ) -> bool:
     """Insert an arena_events row if the (user, type, ref) tuple isn't already recorded.
     Returns True if a new row was inserted, False if it was a duplicate.
 
     Exceptions are swallowed and logged — point tracking must never break a request.
+    `created_at` overrides the DB default — used by backfills so historical events
+    keep their original timestamps instead of clumping on the run date.
     """
     try:
         pts = POINTS.get(event_type)
@@ -122,6 +125,8 @@ def _award(
             ref_id=ref_id,
             note=note,
         )
+        if created_at is not None:
+            row.created_at = created_at
         db.add(row)
         db.commit()
         return True
@@ -141,19 +146,30 @@ def award_daily_login(db: Session, user_id: int) -> bool:
                   note=f"login {today.isoformat()}")
 
 
-def award_analysis_done(db: Session, user_id: int, analysis_id: int) -> bool:
+def award_analysis_done(
+    db: Session, user_id: int, analysis_id: int,
+    created_at: Optional[datetime] = None,
+) -> bool:
     return _award(db, user_id=user_id, event_type="analysis_done", ref_id=analysis_id,
-                  note=f"analysis #{analysis_id}")
+                  note=f"analysis #{analysis_id}", created_at=created_at)
 
 
-def award_pr_opened(db: Session, user_id: int, run_id: int, pr_number: Optional[int]) -> bool:
+def award_pr_opened(
+    db: Session, user_id: int, run_id: int, pr_number: Optional[int],
+    created_at: Optional[datetime] = None,
+) -> bool:
     note = f"PR #{pr_number}" if pr_number else f"contribution run #{run_id}"
-    return _award(db, user_id=user_id, event_type="pr_opened", ref_id=run_id, note=note)
+    return _award(db, user_id=user_id, event_type="pr_opened", ref_id=run_id,
+                  note=note, created_at=created_at)
 
 
-def award_pr_merged(db: Session, user_id: int, run_id: int, pr_number: Optional[int]) -> bool:
+def award_pr_merged(
+    db: Session, user_id: int, run_id: int, pr_number: Optional[int],
+    created_at: Optional[datetime] = None,
+) -> bool:
     note = f"PR #{pr_number} merged" if pr_number else f"contribution run #{run_id} merged"
-    return _award(db, user_id=user_id, event_type="pr_merged", ref_id=run_id, note=note)
+    return _award(db, user_id=user_id, event_type="pr_merged", ref_id=run_id,
+                  note=note, created_at=created_at)
 
 
 # ─── Aggregations ────────────────────────────────────────────────────────────
@@ -362,17 +378,38 @@ def backfill_existing(db: Session) -> dict:
     """One-time seed: award analysis_done for every existing 'done' analysis,
     and pr_opened/pr_merged for every existing contribution_run.
     All awards are idempotent so this is safe to re-run.
+
+    Historical timestamps are preserved from the source row (analysis.created_at,
+    run.completed_at, run.pr_merged_at) so the heatmap reflects when work
+    actually happened — not when the backfill ran.
     """
     awarded = {"analysis_done": 0, "pr_opened": 0, "pr_merged": 0}
     for a in db.query(models.Analysis).filter(models.Analysis.status == "done").all():
-        if award_analysis_done(db, a.user_id, a.id):
+        if award_analysis_done(db, a.user_id, a.id, created_at=a.created_at):
             awarded["analysis_done"] += 1
     for r in db.query(models.ContributionRun).filter(
         models.ContributionRun.pr_url.isnot(None)
     ).all():
-        if award_pr_opened(db, r.user_id, r.id, r.pr_number):
+        opened_at = r.completed_at or r.created_at
+        if award_pr_opened(db, r.user_id, r.id, r.pr_number, created_at=opened_at):
             awarded["pr_opened"] += 1
         if r.pr_state == "merged":
-            if award_pr_merged(db, r.user_id, r.id, r.pr_number):
+            merged_at = r.pr_merged_at or r.completed_at or r.created_at
+            if award_pr_merged(db, r.user_id, r.id, r.pr_number, created_at=merged_at):
                 awarded["pr_merged"] += 1
     return awarded
+
+
+def reset_and_backfill(db: Session) -> dict:
+    """Wipes all backfill-style events (analysis_done, pr_opened, pr_merged) and
+    rebuilds them with original timestamps. Daily-login events are preserved.
+    Use this once after fixing the timestamp bug; idempotent thereafter.
+    """
+    deleted = (
+        db.query(models.ArenaEvent)
+        .filter(models.ArenaEvent.event_type.in_(["analysis_done", "pr_opened", "pr_merged"]))
+        .delete(synchronize_session=False)
+    )
+    db.commit()
+    seeded = backfill_existing(db)
+    return {"deleted": int(deleted), **seeded}
