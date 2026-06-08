@@ -1,13 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { motion } from "framer-motion";
 import {
-  FiArrowRight, FiCheckCircle, FiCode, FiGithub, FiMail,
+  FiArrowRight, FiCheckCircle, FiMail,
   FiMapPin, FiSend, FiAlertCircle,
 } from "react-icons/fi";
 import { api } from "@/lib/api";
+import { SiteHeader } from "@/components/site/SiteHeader";
+import { SiteFooter } from "@/components/site/SiteFooter";
 
 const HQ_LINES = [
   "3/93-26, Venkateshwara Nagar",
@@ -64,30 +65,7 @@ export default function ContactPage() {
       <div className="fixed inset-0 grid-bg opacity-70 pointer-events-none" />
       <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-crimson/10 rounded-full blur-[120px] pointer-events-none" />
 
-      {/* Nav */}
-      <nav className="sticky top-0 z-30 backdrop-blur-md bg-background/70 border-b border-border">
-        <div className="max-w-6xl mx-auto flex items-center justify-between px-6 py-4">
-          <Link href="/" className="flex items-center gap-2.5">
-            <span className="w-7 h-7 rounded-md bg-crimson/15 border border-crimson/30 flex items-center justify-center text-crimson">
-              <FiCode size={14} />
-            </span>
-            <span className="text-white text-[15px] font-semibold tracking-tight">
-              OpenSource<span className="text-crimson">Mate</span>
-            </span>
-          </Link>
-          <div className="flex items-center gap-1 sm:gap-2">
-            <Link href="/login" className="text-sm text-muted-foreground hover:text-white transition-colors px-4 py-2">
-              Sign in
-            </Link>
-            <Link
-              href="/register"
-              className="inline-flex items-center gap-1.5 text-sm bg-crimson hover:bg-crimson-dark text-white px-4 py-2 rounded-lg transition-all font-medium shadow-[0_4px_20px_-4px_rgba(217,119,87,0.5)]"
-            >
-              Get Started <FiArrowRight size={14} />
-            </Link>
-          </div>
-        </div>
-      </nav>
+      <SiteHeader />
 
       <main className="flex-1 relative z-10">
         {/* Hero */}
@@ -336,29 +314,7 @@ export default function ContactPage() {
         </section>
       </main>
 
-      <footer className="relative z-10 border-t border-border">
-        <div className="max-w-6xl mx-auto px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
-          <div className="flex items-center gap-2">
-            <span className="w-5 h-5 rounded bg-crimson/15 border border-crimson/30 flex items-center justify-center text-crimson">
-              <FiCode size={10} />
-            </span>
-            <span>© 2026 OpenSourceMate</span>
-          </div>
-          <div className="flex items-center gap-5">
-            <Link href="/" className="hover:text-white transition-colors">Home</Link>
-            <Link href="/login" className="hover:text-white transition-colors">Sign in</Link>
-            <Link href="/register" className="hover:text-white transition-colors">Get started</Link>
-            <a
-              href="https://github.com/ramyacm23/OpenSourceMate"
-              target="_blank"
-              rel="noreferrer"
-              className="hover:text-white transition-colors inline-flex items-center gap-1.5"
-            >
-              <FiGithub size={12} /> GitHub
-            </a>
-          </div>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }
