@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import { AppShell } from "./AppShell";
 
 // Public routes — no shell, render children bare
-const PUBLIC_PREFIXES = ["/login", "/register", "/onboarding", "/forgot-password", "/contact"];
+const PUBLIC_PREFIXES = ["/login", "/register", "/onboarding", "/forgot-password", "/contact", "/about"];
 
 export function ProtectedShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() || "/";

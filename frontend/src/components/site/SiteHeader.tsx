@@ -17,6 +17,12 @@ export function SiteHeader() {
         </Link>
         <div className="flex items-center gap-1 sm:gap-2">
           <Link
+            href="/about"
+            className="hidden sm:inline-flex text-sm text-muted-foreground hover:text-white transition-colors px-4 py-2"
+          >
+            About
+          </Link>
+          <Link
             href="/contact"
             className="hidden sm:inline-flex text-sm text-muted-foreground hover:text-white transition-colors px-4 py-2"
           >

@@ -14,6 +14,9 @@ export function SiteFooter() {
           <span>© 2026 OpenSourceMate</span>
         </div>
         <div className="flex items-center gap-5">
+          <Link href="/about" className="hover:text-white transition-colors">
+            About
+          </Link>
           <Link href="/contact" className="hover:text-white transition-colors">
             Contact
           </Link>
