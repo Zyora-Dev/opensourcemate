@@ -132,6 +132,15 @@ export const api = {
   arenaMe: (token: string) => getJson("/arena/me", token),
   arenaActivity: (token: string, days = 365) => getJson(`/arena/activity?days=${days}`, token),
   arenaFeed: (token: string, limit = 25) => getJson(`/arena/feed?limit=${limit}`, token),
+
+  // Contact — public, no auth
+  submitContact: (body: {
+    name: string;
+    email: string;
+    subject?: string;
+    message: string;
+    website?: string;
+  }) => req("/contact/", body),
 };
 
 // Helper to resolve avatar URLs returned by the API.

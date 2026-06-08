@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import Link from "next/link";
 import {
-  FiHome, FiZap, FiClock, FiUser, FiLogOut, FiCode, FiGithub, FiAward, FiActivity,
+  FiHome, FiZap, FiClock, FiUser, FiLogOut, FiCode, FiGithub, FiAward, FiActivity, FiMail,
   FiChevronLeft, FiChevronRight, FiBell, FiSearch, FiMenu, FiX,
 } from "react-icons/fi";
 import {
@@ -162,6 +163,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
           {/* Footer */}
           <div className="p-2 border-t border-border space-y-1">
+            {/* Contact */}
+            <Link
+              href="/contact"
+              className={cn(
+                "w-full flex items-center gap-3 rounded-xl h-10 text-muted-foreground hover:text-white hover:bg-muted/30 transition-all",
+                collapsed ? "justify-center" : "px-3"
+              )}
+            >
+              <FiMail size={15} className="shrink-0" />
+              {!collapsed && <span className="text-sm">Contact</span>}
+            </Link>
+
             {/* GitHub external */}
             <a
               href="https://github.com/ramyacm23/OpenSourceMate"

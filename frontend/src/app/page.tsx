@@ -61,6 +61,9 @@ export default function LandingPage() {
             </span>
           </div>
           <div className="flex items-center gap-1 sm:gap-2">
+            <Link href="/contact" className="hidden sm:inline-flex text-sm text-muted-foreground hover:text-white transition-colors px-4 py-2">
+              Contact
+            </Link>
             <Link href="/login" className="text-sm text-muted-foreground hover:text-white transition-colors px-4 py-2">
               Sign in
             </Link>
@@ -303,9 +306,10 @@ export default function LandingPage() {
             <span>© 2026 OpenSourceMate</span>
           </div>
           <div className="flex items-center gap-5">
+            <Link href="/contact" className="hover:text-white transition-colors">Contact</Link>
             <Link href="/login" className="hover:text-white transition-colors">Sign in</Link>
             <Link href="/register" className="hover:text-white transition-colors">Get started</Link>
-            <a href="https://github.com" target="_blank" rel="noreferrer" className="hover:text-white transition-colors inline-flex items-center gap-1.5">
+            <a href="https://github.com/ramyacm23/OpenSourceMate" target="_blank" rel="noreferrer" className="hover:text-white transition-colors inline-flex items-center gap-1.5">
               <FiGithub size={12} /> GitHub
             </a>
           </div>
