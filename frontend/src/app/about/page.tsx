@@ -116,10 +116,11 @@ const STATS = [
 ];
 
 const TIMELINE = [
-  { year: "2025", title: "The dorm-room idea",          desc: "Ramya & friends start sketching what an AI contribution coach would feel like." },
-  { year: "2025", title: "First fork → first merged PR", desc: "Internal prototype guides a classmate through their very first open source contribution." },
-  { year: "2026", title: "OpenSourceMate goes live",     desc: "Public launch with AI analysis, automated PR flow, and the contributor Arena." },
-  { year: "Now",  title: "Building with the community",  desc: "Onboarding more students, listening hard, shipping every week." },
+  { year: "May 2026",  title: "The startup idea",              desc: "Ramya & friends at VIT Chennai start sketching what an AI contribution coach would feel like." },
+  { year: "June 2026", title: "First commit",                  desc: "The first lines of OpenSourceMate land on GitHub — repo initialised, scaffold up." },
+  { year: "June 2026", title: "First merged PR",               desc: "Internal prototype guides a classmate through their very first open source contribution." },
+  { year: "2026",      title: "OpenSourceMate goes live",      desc: "Public launch with AI analysis, automated PR flow, and the contributor Arena." },
+  { year: "Now",       title: "Building with the community",   desc: "Onboarding more students, listening hard, shipping every week." },
 ];
 
 function TeamCard({ m, idx }: { m: Member; idx: number }) {
