@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { FiArrowRight, FiCode, FiMenu, FiX } from "react-icons/fi";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const NAV = [
   { href: "/about", label: "About" },
@@ -59,6 +60,7 @@ export function SiteHeader() {
           >
             Sign in
           </Link>
+          <ThemeToggle size="sm" className="ml-1" />
           <Link
             href="/register"
             className="inline-flex items-center gap-1.5 text-sm bg-crimson hover:bg-crimson-dark text-white px-4 py-2 rounded-lg transition-all font-medium shadow-[0_4px_20px_-4px_rgba(217,119,87,0.5)]"
@@ -112,6 +114,10 @@ export function SiteHeader() {
             >
               Get Started <FiArrowRight size={14} />
             </Link>
+            <div className="mt-3 pt-3 border-t border-border flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">Theme</span>
+              <ThemeToggle size="sm" />
+            </div>
           </div>
         </div>
 

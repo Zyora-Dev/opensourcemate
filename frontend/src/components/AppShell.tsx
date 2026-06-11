@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { api, resolveAvatar } from "@/lib/api";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 interface ShellUser {
   id: number;
@@ -176,6 +177,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               {!collapsed && <span className="text-sm">GitHub</span>}
             </a>
 
+            {/* Theme toggle */}
+            {collapsed ? (
+              <div className="flex justify-center">
+                <ThemeToggle size="sm" />
+              </div>
+            ) : (
+              <div className="flex items-center justify-between gap-3 rounded-xl h-10 px-3 text-muted-foreground">
+                <span className="text-sm">Theme</span>
+                <ThemeToggle size="sm" />
+              </div>
+            )}
+
             {/* Sign out */}
             <button
               onClick={logout}
@@ -259,7 +272,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               );
             })}
           </div>
-          <div className="p-2 border-t border-border">
+          <div className="p-2 border-t border-border space-y-1">
+            <div className="flex items-center justify-between gap-3 rounded-xl h-10 px-3 text-muted-foreground">
+              <span className="text-sm">Theme</span>
+              <ThemeToggle size="sm" />
+            </div>
             <button
               onClick={logout}
               className="w-full flex items-center gap-3 rounded-xl h-10 px-3 text-muted-foreground hover:text-red-400 hover:bg-red-500/10"
