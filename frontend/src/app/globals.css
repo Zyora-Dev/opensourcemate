@@ -37,8 +37,36 @@
   --color-foreground: var(--foreground);
 }
 
-/* Light theme (default until script overrides) */
+/* Dark theme is the BASELINE — applies until JS sets .light or .dark explicitly. */
 :root {
+  color-scheme: dark;
+  --background: #0c0a09;
+  --surface: #161311;
+  --border: #26201d;
+  --crimson: #d97757;
+  --crimson-dark: #b8593b;
+  --crimson-light: #ea9978;
+  --crimson-muted: rgba(217, 119, 87, 0.13);
+  --card: #161311;
+  --card-foreground: #faf9f7;
+  --popover: #161311;
+  --popover-foreground: #faf9f7;
+  --primary: #d97757;
+  --primary-foreground: #faf9f7;
+  --secondary: #1d1916;
+  --secondary-foreground: #faf9f7;
+  --muted: #211c19;
+  --muted-foreground: #a39990;
+  --accent: #d97757;
+  --accent-foreground: #faf9f7;
+  --destructive: #ef4444;
+  --input: #1d1916;
+  --ring: #d97757;
+  --foreground: #faf9f7;
+}
+
+/* Light theme — only when explicitly toggled */
+.light {
   color-scheme: light;
   --background: #f4efe7;
   --surface: #fffaf2;
@@ -65,7 +93,7 @@
   --foreground: #1f1a15;
 }
 
-/* Dark theme — original Claude orange palette */
+/* Dark theme — explicit class (kept for parity with .light, same as :root) */
 .dark {
   color-scheme: dark;
   --background: #0c0a09;

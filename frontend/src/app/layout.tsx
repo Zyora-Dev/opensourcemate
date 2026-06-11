@@ -7,17 +7,14 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
-// No-flash theme script — runs synchronously before paint to set
-// `light` / `dark` on <html> based on localStorage or system preference.
+// No-flash theme script — dark-first.
+// Reads localStorage; if nothing stored, defaults to dark (no system-pref auto-light).
 const themeScript = `
 (() => {
   const k = "osm-theme";
   try {
     const s = window.localStorage.getItem(k);
-    const t =
-      s === "light" || s === "dark"
-        ? s
-        : (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    const t = s === "light" ? "light" : "dark";
     const r = document.documentElement;
     r.classList.remove("light", "dark");
     r.classList.add(t);

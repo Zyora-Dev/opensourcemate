@@ -42,7 +42,8 @@ function resolvePreferredTheme(): Theme {
   if (typeof window === "undefined") return "dark";
   const stored = window.localStorage.getItem(STORAGE_KEY);
   if (stored === "light" || stored === "dark") return stored;
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  // Dark-first: ignore system preference, default to dark on first visit.
+  return "dark";
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
@@ -59,16 +60,18 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     applyTheme(theme);
   }, [mounted, theme]);
 
-  // Auto-track system theme only if user hasn't picked one
+  // Auto-track system theme only if user hasn't picked one.
+  // Dark-first: we default to dark (not system), so this is a no-op unless
+  // someone manually clears the storage key. Kept for completeness.
   useEffect(() => {
     if (typeof window === "undefined") return;
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
-    const onChange = (e: MediaQueryListEvent) => {
+    const onChange = () => {
       const stored = window.localStorage.getItem(STORAGE_KEY);
       if (stored === "light" || stored === "dark") return;
-      const next: Theme = e.matches ? "dark" : "light";
-      applyTheme(next);
-      setThemeState(next);
+      // No stored value — dark-first policy still wins.
+      applyTheme("dark");
+      setThemeState("dark");
     };
     mq.addEventListener("change", onChange);
     return () => mq.removeEventListener("change", onChange);
