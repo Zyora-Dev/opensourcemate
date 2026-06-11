@@ -1,4 +1,5 @@
 "use client";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import {
@@ -11,6 +12,7 @@ import {
 } from "react-icons/si";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
+import { api } from "@/lib/api";
 
 const features = [
   { icon: <FiZap size={20} />,    title: "AI-Powered Matching",  desc: "Get matched with issues that fit your skills and interests instantly." },
@@ -19,12 +21,20 @@ const features = [
   { icon: <FiGithub size={20} />, title: "GitHub Native",        desc: "Seamlessly integrates with your GitHub workflow and repositories." },
 ];
 
-const stats = [
-  { value: "10k+", label: "Contributors" },
-  { value: "2.4k", label: "Repositories" },
-  { value: "48k",  label: "Issues matched" },
-  { value: "97%",  label: "PR acceptance" },
+const stats: { key: "contributors" | "analyses" | "prs_opened" | "prs_merged"; label: string }[] = [
+  { key: "contributors", label: "Contributors" },
+  { key: "analyses",     label: "Issues analyzed" },
+  { key: "prs_opened",   label: "Pull requests opened" },
+  { key: "prs_merged",   label: "Pull requests merged" },
 ];
+
+function formatCompact(n: number): string {
+  if (!Number.isFinite(n) || n < 0) return "—";
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(n >= 10_000_000 ? 0 : 1)}M`;
+  if (n >= 10_000)    return `${(n / 1_000).toFixed(0)}k`;
+  if (n >= 1_000)     return `${(n / 1_000).toFixed(1)}k`;
+  return String(n);
+}
 
 const techLogos = [
   { icon: <SiReact />,      name: "React" },
@@ -45,6 +55,22 @@ const flow = [
 ];
 
 export default function LandingPage() {
+  const [counts, setCounts] = useState<{
+    contributors: number;
+    analyses: number;
+    prs_opened: number;
+    prs_merged: number;
+  } | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    api.publicStats().then(
+      (r) => { if (alive) setCounts(r); },
+      () => { /* silent — we'll show em-dash */ },
+    );
+    return () => { alive = false; };
+  }, []);
+
   return (
     <div className="min-h-screen bg-background flex flex-col relative">
       {/* Background layers */}
@@ -175,15 +201,22 @@ export default function LandingPage() {
           </motion.div>
         </section>
 
-        {/* Stats strip */}
+        {/* Stats strip — live from DB */}
         <section className="px-6 py-10 md:py-14 max-w-6xl mx-auto">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-border rounded-2xl overflow-hidden border border-border">
-            {stats.map((s) => (
-              <div key={s.label} className="bg-surface px-6 py-7 text-center">
-                <div className="text-3xl md:text-4xl font-semibold tracking-tight text-white">{s.value}</div>
-                <div className="text-xs text-muted-foreground mt-1.5 uppercase tracking-[0.15em]">{s.label}</div>
-              </div>
-            ))}
+            {stats.map((s) => {
+              const value = counts ? formatCompact(counts[s.key]) : null;
+              return (
+                <div key={s.label} className="bg-surface px-6 py-7 text-center">
+                  <div className="text-3xl md:text-4xl font-semibold tracking-tight text-foreground tabular-nums">
+                    {value ?? (
+                      <span className="inline-block w-12 h-7 md:h-8 rounded bg-border/60 animate-pulse" />
+                    )}
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-1.5 uppercase tracking-[0.15em]">{s.label}</div>
+                </div>
+              );
+            })}
           </div>
         </section>
 

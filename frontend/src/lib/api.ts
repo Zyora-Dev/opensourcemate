@@ -142,6 +142,18 @@ export const api = {
     website?: string;
   }) => req("/contact/", body),
 
+  // Public stats — landing page counters (no auth)
+  publicStats: async () => {
+    const res = await fetch(`${API}/stats/public`);
+    if (!res.ok) throw new Error("Failed to load stats");
+    return res.json() as Promise<{
+      contributors: number;
+      analyses: number;
+      prs_opened: number;
+      prs_merged: number;
+    }>;
+  },
+
   // Notifications
   notifList: (token: string, limit = 30, onlyUnread = false) =>
     getJson(`/notifications?limit=${limit}&only_unread=${onlyUnread}`, token),
