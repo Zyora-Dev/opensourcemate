@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import {
   FiHome, FiZap, FiClock, FiUser, FiLogOut, FiCode, FiGithub, FiAward, FiActivity,
-  FiChevronLeft, FiChevronRight, FiBell, FiSearch, FiMenu, FiX,
+  FiChevronLeft, FiChevronRight, FiSearch, FiMenu, FiX,
 } from "react-icons/fi";
 import {
   Tooltip, TooltipContent, TooltipTrigger, TooltipProvider,
@@ -12,6 +12,7 @@ import {
 import { cn } from "@/lib/utils";
 import { api, resolveAvatar } from "@/lib/api";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { NotificationCenter } from "@/components/NotificationCenter";
 
 interface ShellUser {
   id: number;
@@ -323,14 +324,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
                 {/* Right cluster */}
                 <div className="flex items-center gap-1.5">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button className="w-9 h-9 rounded-lg border border-border bg-background/40 text-muted-foreground hover:text-white hover:border-crimson/40 transition-all flex items-center justify-center">
-                        <FiBell size={14} />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent>Notifications</TooltipContent>
-                  </Tooltip>
+                  <NotificationCenter />
 
                   {user && (
                     <button

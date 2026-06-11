@@ -152,6 +152,22 @@ def register_verify(body: schemas.RegisterVerifyRequest, db: Session = Depends(g
         db.add(user)
     db.commit()
     db.refresh(user)
+
+    # Welcome notification — best effort
+    try:
+        import notifications as _notif
+        _notif.notify(
+            db,
+            user_id=user.id,
+            category=_notif.CATEGORY_SYSTEM,
+            severity="info",
+            title="Welcome to OpenSourceMate 👋",
+            body="Connect your GitHub, paste an issue link, and ship your first PR with AI guidance.",
+            href="/onboarding",
+        )
+    except Exception:
+        pass
+
     return {"access_token": create_access_token(user.id)}
 
 

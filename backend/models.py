@@ -158,3 +158,29 @@ class ArenaEvent(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
 
     user = relationship("User")
+
+
+class Notification(Base):
+    """User-facing in-app notification.
+
+    Categories: points | pr | automation | system | analysis | github
+    Severity: info | success | warning | error
+    `ref_kind` + `ref_id` let the UI deep-link (e.g. ref_kind="analysis", ref_id=123 → /analyze/123).
+    `meta` stores a small JSON blob (e.g. points awarded, PR number) for richer rendering.
+    """
+    __tablename__ = "notifications"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    category = Column(String, nullable=False, index=True)
+    severity = Column(String, nullable=False, default="info")
+    title = Column(String, nullable=False)
+    body = Column(Text, nullable=True)
+    ref_kind = Column(String, nullable=True)       # analysis | contribution_run | arena_event | system
+    ref_id = Column(Integer, nullable=True)
+    href = Column(String, nullable=True)           # optional explicit link override
+    meta = Column(Text, nullable=True)             # JSON
+    read_at = Column(DateTime(timezone=True), nullable=True, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+    user = relationship("User")

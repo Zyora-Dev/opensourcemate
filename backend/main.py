@@ -16,7 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 from database import Base, engine
-from routes import auth_routes, onboarding_routes, dashboard_routes, github_routes, profile_routes, analyze_routes, contribute_routes, learning_routes, arena_routes, contact_routes
+from routes import auth_routes, onboarding_routes, dashboard_routes, github_routes, profile_routes, analyze_routes, contribute_routes, learning_routes, arena_routes, contact_routes, notifications_routes
 
 Base.metadata.create_all(bind=engine)
 
@@ -59,6 +59,27 @@ with engine.begin() as conn:
     conn.execute(text("CREATE INDEX IF NOT EXISTS ix_arena_events_event_type ON arena_events (event_type)"))
     conn.execute(text("CREATE INDEX IF NOT EXISTS ix_arena_events_created_at ON arena_events (created_at)"))
     conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ux_arena_events_dedup ON arena_events (user_id, event_type, ref_id) WHERE ref_id IS NOT NULL"))
+    # Notifications — in-app notification center
+    conn.execute(text(
+        "CREATE TABLE IF NOT EXISTS notifications ("
+        "id SERIAL PRIMARY KEY, "
+        "user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, "
+        "category TEXT NOT NULL, "
+        "severity TEXT NOT NULL DEFAULT 'info', "
+        "title TEXT NOT NULL, "
+        "body TEXT, "
+        "ref_kind TEXT, "
+        "ref_id INTEGER, "
+        "href TEXT, "
+        "meta TEXT, "
+        "read_at TIMESTAMPTZ, "
+        "created_at TIMESTAMPTZ DEFAULT NOW()"
+        ")"
+    ))
+    conn.execute(text("CREATE INDEX IF NOT EXISTS ix_notifications_user_id ON notifications (user_id)"))
+    conn.execute(text("CREATE INDEX IF NOT EXISTS ix_notifications_category ON notifications (category)"))
+    conn.execute(text("CREATE INDEX IF NOT EXISTS ix_notifications_created_at ON notifications (created_at)"))
+    conn.execute(text("CREATE INDEX IF NOT EXISTS ix_notifications_user_unread ON notifications (user_id, read_at)"))
 
 # RAG (Stage 8 — Phase B). Soft-fails if pgvector isn't installed at the DB level.
 import rag as _rag  # noqa: E402
@@ -87,6 +108,7 @@ app.include_router(contribute_routes.router)
 app.include_router(learning_routes.router)
 app.include_router(arena_routes.router)
 app.include_router(contact_routes.router)
+app.include_router(notifications_routes.router)
 
 # Serve user-uploaded files (avatars, etc.)
 from pathlib import Path as _Path

@@ -470,6 +470,25 @@ async def run_contribution_flow(
                 _arena.award_pr_opened(db, run.user_id, run.id, run.pr_number)
             except Exception:
                 pass
+
+            # Notify: PR opened (separate from points notification, more contextual)
+            try:
+                import notifications as _notif
+                _notif.notify(
+                    db,
+                    user_id=run.user_id,
+                    category=_notif.CATEGORY_PR,
+                    severity="success",
+                    title=f"PR #{run.pr_number} opened on {upstream_owner}/{upstream_repo}",
+                    body=f"{applied} file(s) changed, {skipped} skipped. Click to open the pull request on GitHub.",
+                    href=run.pr_url,
+                    ref_kind="contribution_run",
+                    ref_id=run.id,
+                    meta={"pr_number": run.pr_number, "pr_url": run.pr_url, "applied": applied, "skipped": skipped},
+                    dedupe=True,
+                )
+            except Exception:
+                pass
             return run
 
     except HTTPException as e:
@@ -481,6 +500,21 @@ async def run_contribution_flow(
         run.steps = json.dumps(steps)
         run.completed_at = datetime.now(timezone.utc)
         db.commit()
+        try:
+            import notifications as _notif
+            _notif.notify(
+                db,
+                user_id=run.user_id,
+                category=_notif.CATEGORY_AUTOMATION,
+                severity="error",
+                title="Contribution flow failed",
+                body=str(e.detail)[:500],
+                href=f"/analyze/{run.analysis_id}",
+                ref_kind="contribution_run",
+                ref_id=run.id,
+            )
+        except Exception:
+            pass
         raise
     except Exception as e:  # noqa: BLE001
         log.exception("Contribution flow crashed")
@@ -491,6 +525,21 @@ async def run_contribution_flow(
         run.steps = json.dumps(steps)
         run.completed_at = datetime.now(timezone.utc)
         db.commit()
+        try:
+            import notifications as _notif
+            _notif.notify(
+                db,
+                user_id=run.user_id,
+                category=_notif.CATEGORY_AUTOMATION,
+                severity="error",
+                title="Contribution flow crashed",
+                body=str(e)[:500],
+                href=f"/analyze/{run.analysis_id}",
+                ref_kind="contribution_run",
+                ref_id=run.id,
+            )
+        except Exception:
+            pass
         raise HTTPException(500, f"Contribution flow failed: {e}")
 
 
@@ -557,6 +606,24 @@ async def get_latest_contribution(
                         try:
                             import arena as _arena
                             _arena.award_pr_merged(db, run.user_id, run.id, run.pr_number)
+                        except Exception:
+                            pass
+                        # Notify: PR merged (separate from points notification)
+                        try:
+                            import notifications as _notif
+                            _notif.notify(
+                                db,
+                                user_id=run.user_id,
+                                category=_notif.CATEGORY_PR,
+                                severity="success",
+                                title=f"PR #{run.pr_number} merged on {upstream_owner}/{upstream_repo}",
+                                body="Congratulations — your contribution shipped.",
+                                href=run.pr_url,
+                                ref_kind="contribution_run",
+                                ref_id=run.id,
+                                meta={"pr_number": run.pr_number, "pr_url": run.pr_url, "merged": True},
+                                dedupe=True,
+                            )
                         except Exception:
                             pass
                     else:

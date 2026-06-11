@@ -141,6 +141,43 @@ export const api = {
     message: string;
     website?: string;
   }) => req("/contact/", body),
+
+  // Notifications
+  notifList: (token: string, limit = 30, onlyUnread = false) =>
+    getJson(`/notifications?limit=${limit}&only_unread=${onlyUnread}`, token),
+  notifUnreadCount: (token: string) => getJson("/notifications/unread-count", token),
+  notifMarkRead: async (id: number, token: string) => {
+    const res = await fetch(`${API}/notifications/${id}/read`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error("Failed to mark read");
+    return res.json();
+  },
+  notifMarkAllRead: async (token: string) => {
+    const res = await fetch(`${API}/notifications/mark-all-read`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error("Failed to mark all read");
+    return res.json();
+  },
+  notifDelete: async (id: number, token: string) => {
+    const res = await fetch(`${API}/notifications/${id}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error("Failed to delete notification");
+    return res.json();
+  },
+  notifClearRead: async (token: string) => {
+    const res = await fetch(`${API}/notifications/clear-read`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error("Failed to clear read");
+    return res.json();
+  },
 };
 
 // Helper to resolve avatar URLs returned by the API.

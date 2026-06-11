@@ -217,6 +217,22 @@ def github_callback(
     db.commit()
     db.refresh(target)
 
+    # Notify GitHub connected
+    try:
+        import notifications as _notif
+        _notif.notify(
+            db,
+            user_id=target.id,
+            category=_notif.CATEGORY_GITHUB,
+            severity="success",
+            title=f"GitHub connected as @{gh_login}",
+            body="Your GitHub account is linked. You can now run automated contributions.",
+            href="/profile",
+            meta={"github_username": gh_login},
+        )
+    except Exception:
+        pass
+
     # 5. Redirect back to frontend
     app_token = create_access_token(target.id)
     if mode == "signup":

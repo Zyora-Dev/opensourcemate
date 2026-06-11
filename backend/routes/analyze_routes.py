@@ -886,12 +886,42 @@ async def create_analysis(
     except HTTPException:
         row.status = "error"
         db.commit()
+        try:
+            import notifications as _notif
+            _notif.notify(
+                db,
+                user_id=row.user_id,
+                category=_notif.CATEGORY_ANALYSIS,
+                severity="error",
+                title="Analysis failed",
+                body="The AI couldn't complete this analysis. Open the report to retry.",
+                href=f"/analyze/{row.id}",
+                ref_kind="analysis",
+                ref_id=row.id,
+            )
+        except Exception:
+            pass
         raise
     except Exception as e:
         log.exception("Analysis failed")
         row.status = "error"
         row.error_message = str(e)[:500]
         db.commit()
+        try:
+            import notifications as _notif
+            _notif.notify(
+                db,
+                user_id=row.user_id,
+                category=_notif.CATEGORY_ANALYSIS,
+                severity="error",
+                title="Analysis failed",
+                body=str(e)[:300],
+                href=f"/analyze/{row.id}",
+                ref_kind="analysis",
+                ref_id=row.id,
+            )
+        except Exception:
+            pass
         raise HTTPException(500, f"Analysis failed: {e}")
 
     db.commit()

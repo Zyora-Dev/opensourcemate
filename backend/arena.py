@@ -20,6 +20,7 @@ from sqlalchemy import and_, func, select
 from sqlalchemy.orm import Session
 
 import models
+import notifications as notif_svc
 
 log = logging.getLogger("arena")
 
@@ -92,9 +93,14 @@ def _award(
     *,
     user_id: int,
     event_type: str,
-    ref_id: Optional[int],
+    ref_id: Optional[int] = None,
     note: Optional[str] = None,
     created_at: Optional[datetime] = None,
+    notify_title: Optional[str] = None,
+    notify_body: Optional[str] = None,
+    notify_href: Optional[str] = None,
+    notify_ref_kind: Optional[str] = None,
+    notify_ref_id: Optional[int] = None,
 ) -> bool:
     """Insert an arena_events row if the (user, type, ref) tuple isn't already recorded.
     Returns True if a new row was inserted, False if it was a duplicate.
@@ -129,6 +135,20 @@ def _award(
             row.created_at = created_at
         db.add(row)
         db.commit()
+        # Fire a points-category notification (best effort, never blocks)
+        if notify_title:
+            notif_svc.notify(
+                db,
+                user_id=user_id,
+                category=notif_svc.CATEGORY_POINTS,
+                severity="success",
+                title=notify_title,
+                body=notify_body,
+                href=notify_href,
+                ref_kind=notify_ref_kind or "arena_event",
+                ref_id=notify_ref_id,
+                meta={"event_type": event_type, "points": pts},
+            )
         return True
     except Exception as e:  # noqa: BLE001
         log.warning("[arena] award failed (user=%s, type=%s): %s", user_id, event_type, e)
@@ -142,16 +162,28 @@ def _award(
 def award_daily_login(db: Session, user_id: int) -> bool:
     today = datetime.now(timezone.utc).date()
     bucket = int(today.strftime("%Y%m%d"))
-    return _award(db, user_id=user_id, event_type="daily_login", ref_id=bucket,
-                  note=f"login {today.isoformat()}")
+    return _award(
+        db, user_id=user_id, event_type="daily_login", ref_id=bucket,
+        note=f"login {today.isoformat()}",
+        notify_title=f"+{POINTS['daily_login']} points · Daily login",
+        notify_body="Welcome back! Daily login bonus credited to your Arena.",
+        notify_href="/arena",
+    )
 
 
 def award_analysis_done(
     db: Session, user_id: int, analysis_id: int,
     created_at: Optional[datetime] = None,
 ) -> bool:
-    return _award(db, user_id=user_id, event_type="analysis_done", ref_id=analysis_id,
-                  note=f"analysis #{analysis_id}", created_at=created_at)
+    return _award(
+        db, user_id=user_id, event_type="analysis_done", ref_id=analysis_id,
+        note=f"analysis #{analysis_id}", created_at=created_at,
+        notify_title=f"+{POINTS['analysis_done']} points · Issue analysed",
+        notify_body=f"Analysis #{analysis_id} is ready. Open the report to review the AI plan.",
+        notify_href=f"/analyze/{analysis_id}",
+        notify_ref_kind="analysis",
+        notify_ref_id=analysis_id,
+    )
 
 
 def award_pr_opened(
@@ -159,8 +191,16 @@ def award_pr_opened(
     created_at: Optional[datetime] = None,
 ) -> bool:
     note = f"PR #{pr_number}" if pr_number else f"contribution run #{run_id}"
-    return _award(db, user_id=user_id, event_type="pr_opened", ref_id=run_id,
-                  note=note, created_at=created_at)
+    pr_label = f"Pull request #{pr_number} opened" if pr_number else "Pull request opened"
+    return _award(
+        db, user_id=user_id, event_type="pr_opened", ref_id=run_id,
+        note=note, created_at=created_at,
+        notify_title=f"+{POINTS['pr_opened']} points · {pr_label}",
+        notify_body="Your contribution is live for review on the upstream repository.",
+        notify_href="/arena",
+        notify_ref_kind="contribution_run",
+        notify_ref_id=run_id,
+    )
 
 
 def award_pr_merged(
@@ -168,8 +208,16 @@ def award_pr_merged(
     created_at: Optional[datetime] = None,
 ) -> bool:
     note = f"PR #{pr_number} merged" if pr_number else f"contribution run #{run_id} merged"
-    return _award(db, user_id=user_id, event_type="pr_merged", ref_id=run_id,
-                  note=note, created_at=created_at)
+    pr_label = f"Pull request #{pr_number} merged" if pr_number else "Pull request merged"
+    return _award(
+        db, user_id=user_id, event_type="pr_merged", ref_id=run_id,
+        note=note, created_at=created_at,
+        notify_title=f"+{POINTS['pr_merged']} points · {pr_label} 🎉",
+        notify_body="Huge milestone — your contribution shipped to the upstream repo.",
+        notify_href="/arena",
+        notify_ref_kind="contribution_run",
+        notify_ref_id=run_id,
+    )
 
 
 # ─── Aggregations ────────────────────────────────────────────────────────────
