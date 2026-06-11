@@ -11,7 +11,6 @@ import {
 } from "react-icons/si";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
-import { ThemeSwitch } from "@/components/ThemeSwitch";
 
 const features = [
   { icon: <FiZap size={20} />,    title: "AI-Powered Matching",  desc: "Get matched with issues that fit your skills and interests instantly." },
@@ -64,10 +63,6 @@ export default function LandingPage() {
           >
             <div className="inline-flex items-center gap-2 text-xs bg-crimson-muted text-crimson border border-crimson/25 rounded-full px-4 py-1.5 mb-8 font-mono backdrop-blur-sm">
               <SiOpenai size={12} /> AI-powered open source contributions
-            </div>
-
-            <div className="flex justify-center mb-8">
-              <ThemeSwitch />
             </div>
 
             <h1 className="text-5xl md:text-7xl font-semibold tracking-tight mb-6 leading-[1.04]">
