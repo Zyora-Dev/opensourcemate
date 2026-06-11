@@ -38,7 +38,7 @@ export function SiteHeader() {
           <span className="w-7 h-7 rounded-md bg-crimson/15 border border-crimson/30 flex items-center justify-center text-crimson">
             <FiCode size={14} />
           </span>
-          <span className="text-white text-[15px] font-semibold tracking-tight">
+          <span className="text-foreground text-[15px] font-semibold tracking-tight">
             OpenSource<span className="text-crimson">Mate</span>
           </span>
         </Link>
@@ -76,7 +76,7 @@ export function SiteHeader() {
           aria-expanded={open}
           aria-controls="site-mobile-menu"
           onClick={() => setOpen((v) => !v)}
-          className="md:hidden inline-flex items-center justify-center w-10 h-10 rounded-lg border border-border text-white hover:bg-white/5 transition-colors"
+          className="md:hidden inline-flex items-center justify-center w-10 h-10 rounded-lg border border-border text-foreground hover:bg-muted/40 transition-colors"
         >
           {open ? <FiX size={18} /> : <FiMenu size={18} />}
         </button>
@@ -97,14 +97,14 @@ export function SiteHeader() {
               <Link
                 key={n.href}
                 href={n.href}
-                className="block text-[15px] text-white/90 hover:text-white hover:bg-white/5 rounded-lg px-3 py-3 transition-colors"
+                className="block text-[15px] text-foreground hover:bg-muted/40 rounded-lg px-3 py-3 transition-colors"
               >
                 {n.label}
               </Link>
             ))}
             <Link
               href="/login"
-              className="block text-[15px] text-white/90 hover:text-white hover:bg-white/5 rounded-lg px-3 py-3 transition-colors"
+              className="block text-[15px] text-foreground hover:bg-muted/40 rounded-lg px-3 py-3 transition-colors"
             >
               Sign in
             </Link>

@@ -164,9 +164,22 @@ body {
 
 /* Anchors / buttons that use text-white but live on a non-crimson, non-white background */
 .light :is(a, button)[class~="text-white"]:not([class~="bg-crimson"]):not([class~="bg-crimson-dark"]):not([class~="bg-white"]):not([class~="bg-black/40"]):not([class~="bg-black/45"]):not([class~="bg-black/50"]):not([class~="bg-black/60"]):not([class~="bg-black/70"]):not([class~="bg-black/85"]),
+.light :is(a, button)[class~="text-white/95"]:not([class~="bg-crimson"]):not([class~="bg-crimson-dark"]):not([class~="bg-white"]),
+.light :is(a, button)[class~="text-white/90"]:not([class~="bg-crimson"]):not([class~="bg-crimson-dark"]):not([class~="bg-white"]),
 .light :is(a, button)[class~="text-white/85"]:not([class~="bg-crimson"]):not([class~="bg-crimson-dark"]):not([class~="bg-white"]),
+.light :is(a, button)[class~="text-white/80"]:not([class~="bg-crimson"]):not([class~="bg-crimson-dark"]):not([class~="bg-white"]),
 .light :is(a, button)[class~="text-white/75"]:not([class~="bg-crimson"]):not([class~="bg-crimson-dark"]):not([class~="bg-white"]) {
   color: var(--color-foreground) !important;
+}
+
+.light :is(a, button)[class~="text-white/70"]:not([class~="bg-crimson"]):not([class~="bg-crimson-dark"]):not([class~="bg-white"]),
+.light :is(a, button)[class~="text-white/65"]:not([class~="bg-crimson"]):not([class~="bg-crimson-dark"]):not([class~="bg-white"]),
+.light :is(a, button)[class~="text-white/60"]:not([class~="bg-crimson"]):not([class~="bg-crimson-dark"]):not([class~="bg-white"]),
+.light :is(a, button)[class~="text-white/55"]:not([class~="bg-crimson"]):not([class~="bg-crimson-dark"]):not([class~="bg-white"]),
+.light :is(a, button)[class~="text-white/50"]:not([class~="bg-crimson"]):not([class~="bg-crimson-dark"]):not([class~="bg-white"]),
+.light :is(a, button)[class~="text-white/45"]:not([class~="bg-crimson"]):not([class~="bg-crimson-dark"]):not([class~="bg-white"]),
+.light :is(a, button)[class~="text-white/40"]:not([class~="bg-crimson"]):not([class~="bg-crimson-dark"]):not([class~="bg-white"]) {
+  color: var(--color-muted-foreground) !important;
 }
 
 .light :is(a, button)[class~="hover:text-white"]:hover {
