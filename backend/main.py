@@ -16,7 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 from database import Base, engine
-from routes import auth_routes, onboarding_routes, dashboard_routes, github_routes, profile_routes, analyze_routes, contribute_routes, learning_routes, arena_routes, contact_routes, notifications_routes, stats_routes
+from routes import auth_routes, onboarding_routes, dashboard_routes, github_routes, profile_routes, analyze_routes, contribute_routes, learning_routes, arena_routes, contact_routes, notifications_routes, stats_routes, admin_routes
 
 Base.metadata.create_all(bind=engine)
 
@@ -110,6 +110,7 @@ app.include_router(arena_routes.router)
 app.include_router(contact_routes.router)
 app.include_router(notifications_routes.router)
 app.include_router(stats_routes.router)
+app.include_router(admin_routes.router)
 
 # Serve user-uploaded files (avatars, etc.)
 from pathlib import Path as _Path

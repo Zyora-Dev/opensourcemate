@@ -5,11 +5,11 @@ import { AppShell } from "./AppShell";
 import { ThemeToggle } from "./ThemeToggle";
 
 // Public routes — no shell, render children bare
-const PUBLIC_PREFIXES = ["/login", "/register", "/onboarding", "/forgot-password", "/contact", "/about"];
+const PUBLIC_PREFIXES = ["/login", "/register", "/onboarding", "/forgot-password", "/contact", "/about", "/admin-panel"];
 
 // Pages whose own chrome (SiteHeader / AppShell) already includes a theme toggle.
 // On every other public page we render a floating one so the toggle is reachable everywhere.
-const HAS_OWN_HEADER = ["/contact", "/about"];
+const HAS_OWN_HEADER = ["/contact", "/about", "/admin-panel"];
 
 function FloatingToggle() {
   return (

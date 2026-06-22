@@ -190,6 +190,30 @@ export const api = {
     if (!res.ok) throw new Error("Failed to clear read");
     return res.json();
   },
+
+  // ─── Admin panel (separate token, kind: "admin") ──────────────────────────
+  adminLogin: (username: string, password: string) =>
+    req("/admin/login", { username, password }),
+  adminOverview: (token: string) => getJson("/admin/overview", token),
+  adminUsers: (token: string, q = "", limit = 50, offset = 0) => {
+    const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
+    if (q) params.set("q", q);
+    return getJson(`/admin/users?${params.toString()}`, token);
+  },
+  adminUser: (id: number, token: string) => getJson(`/admin/users/${id}`, token),
+  adminAnalyses: (token: string, q = "", status = "", limit = 50, offset = 0) => {
+    const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
+    if (q) params.set("q", q);
+    if (status) params.set("status", status);
+    return getJson(`/admin/analyses?${params.toString()}`, token);
+  },
+  adminAnalysis: (id: number, token: string) => getJson(`/admin/analyses/${id}`, token),
+  adminRepos: (token: string) => getJson("/admin/repos", token),
+  adminContributions: (token: string, status = "", limit = 50, offset = 0) => {
+    const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
+    if (status) params.set("status", status);
+    return getJson(`/admin/contributions?${params.toString()}`, token);
+  },
 };
 
 // Helper to resolve avatar URLs returned by the API.
