@@ -186,17 +186,17 @@ export default function AnalyzePage() {
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
             <p className="text-[11px] uppercase tracking-[0.22em] text-crimson font-mono mb-2">Stage 2 · Input</p>
-            <h2 className="text-3xl md:text-4xl font-semibold tracking-tight text-white">
+            <h2 className="text-3xl md:text-4xl font-semibold tracking-tight text-foreground">
               What do you need <span className="text-crimson">help</span> with?
             </h2>
-            <p className="text-[15px] text-white/75 mt-3 max-w-2xl leading-relaxed">
+            <p className="text-[15px] text-muted-foreground mt-3 max-w-2xl leading-relaxed">
               Pick the option that matches your situation. We&apos;ll fetch the right context
               and produce a clear, step-by-step plan you can follow.
             </p>
           </div>
           <button
             onClick={() => router.push("/analyze/history")}
-            className="text-xs h-9 px-3 rounded-lg border border-border bg-surface text-white/80 hover:text-white hover:border-crimson/40 transition-colors inline-flex items-center gap-1.5"
+            className="text-xs h-9 px-3 rounded-lg border border-border bg-surface text-muted-foreground hover:text-foreground hover:border-crimson/40 transition-colors inline-flex items-center gap-1.5"
           >
             <FiPackage size={12} /> Past analyses
           </button>
@@ -242,10 +242,10 @@ export default function AnalyzePage() {
                   {m.icon}
                 </span>
                 <div className="min-w-0">
-                  <p className={"text-sm font-semibold tracking-tight " + (active ? "text-white" : "text-white/90")}>
+                  <p className={"text-sm font-semibold tracking-tight " + (active ? "text-foreground" : "text-foreground/90")}>
                     {m.label}
                   </p>
-                  <p className="text-[12px] text-white/60 mt-0.5 leading-snug">{m.desc}</p>
+                  <p className="text-[12px] text-muted-foreground mt-0.5 leading-snug">{m.desc}</p>
                 </div>
               </div>
               {active && <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-crimson" />}
@@ -283,7 +283,7 @@ export default function AnalyzePage() {
         initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
         className="mt-6 flex items-center justify-between flex-wrap gap-3 pb-2"
       >
-        <p className="text-[13px] text-white/70 inline-flex items-center gap-2">
+        <p className="text-[13px] text-muted-foreground inline-flex items-center gap-2">
           {ready ? (
             <span className="text-emerald-300 inline-flex items-center gap-1.5 font-medium">
               <FiCheck size={13} /> Ready to analyze
@@ -301,7 +301,7 @@ export default function AnalyzePage() {
         <button
           onClick={handleSubmit}
           disabled={!ready || submitting}
-          className="inline-flex items-center gap-2 bg-crimson hover:bg-crimson-dark disabled:bg-muted disabled:text-white/40 disabled:cursor-not-allowed text-white text-[14px] px-5 h-11 rounded-xl font-semibold transition-all glow-crimson disabled:glow-none"
+          className="inline-flex items-center gap-2 bg-crimson hover:bg-crimson-dark disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed text-white text-[14px] px-5 h-11 rounded-xl font-semibold transition-all glow-crimson disabled:glow-none"
         >
           {submitting ? (
             <>
@@ -325,8 +325,8 @@ function PanelHeader({ step, title, hint }: { step: string; title: string; hint:
   return (
     <div className="mb-5">
       <p className="text-[10.5px] uppercase tracking-[0.22em] text-crimson font-mono mb-1.5">{step}</p>
-      <h3 className="text-[18px] font-semibold tracking-tight text-white">{title}</h3>
-      <p className="text-[13.5px] text-white/70 mt-1.5 leading-relaxed">{hint}</p>
+      <h3 className="text-[18px] font-semibold tracking-tight text-foreground">{title}</h3>
+      <p className="text-[13.5px] text-muted-foreground mt-1.5 leading-relaxed">{hint}</p>
     </div>
   );
 }
@@ -376,7 +376,7 @@ function GitHubPanel(props: {
 
   if (reposLoading) {
     return (
-      <div className="flex items-center gap-2 text-sm text-white/70 py-6">
+      <div className="flex items-center gap-2 text-sm text-muted-foreground py-6">
         <FiLoader className="animate-spin text-crimson" size={14} /> Loading your GitHub repos…
       </div>
     );
@@ -393,35 +393,35 @@ function GitHubPanel(props: {
 
         <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-crimson/10 border border-crimson/30 mb-4">
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 text-[14px] font-semibold truncate text-white">
+            <div className="flex items-center gap-2 text-[14px] font-semibold truncate text-foreground">
               {pickedRepo.private && <FiLock size={12} className="text-crimson shrink-0" />}
               <span className="truncate">{pickedRepo.full_name}</span>
             </div>
             {pickedRepo.description && (
-              <p className="text-[12.5px] text-white/70 mt-1 truncate">{pickedRepo.description}</p>
+              <p className="text-[12.5px] text-muted-foreground mt-1 truncate">{pickedRepo.description}</p>
             )}
           </div>
           <button
             onClick={clearPicked}
-            className="text-xs h-8 px-3 rounded-lg border border-border bg-background text-white/80 hover:text-white hover:border-crimson/40 inline-flex items-center gap-1.5 transition-colors shrink-0"
+            className="text-xs h-8 px-3 rounded-lg border border-border bg-background text-muted-foreground hover:text-foreground hover:border-crimson/40 inline-flex items-center gap-1.5 transition-colors shrink-0"
           >
             <FiX size={12} /> Change repo
           </button>
         </div>
 
         {issuesLoading ? (
-          <div className="flex items-center gap-2 text-sm text-white/70 py-3">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground py-3">
             <FiLoader className="animate-spin text-crimson" size={13} /> Loading open issues…
           </div>
         ) : issues && issues.length > 0 ? (
           <>
             <div className="relative mb-3">
-              <FiSearch size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50" />
+              <FiSearch size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <input
                 value={issueSearch}
                 onChange={(e) => setIssueSearch(e.target.value)}
                 placeholder="Filter issues by title…"
-                className="w-full bg-background border border-border rounded-lg pl-9 pr-3 h-10 text-sm text-white placeholder:text-white/40 focus:outline-none focus:border-crimson/50 focus:ring-2 focus:ring-crimson/15 transition-all"
+                className="w-full bg-background border border-border rounded-lg pl-9 pr-3 h-10 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-crimson/50 focus:ring-2 focus:ring-crimson/15 transition-all"
               />
             </div>
             <div className="max-h-[320px] overflow-y-auto space-y-2 pr-1">
@@ -440,8 +440,8 @@ function GitHubPanel(props: {
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0 flex-1">
-                        <div className="text-[14px] text-white font-medium leading-snug">
-                          <span className="text-white/50 font-mono mr-2">#{i.number}</span>
+                        <div className="text-[14px] text-foreground font-medium leading-snug">
+                          <span className="text-muted-foreground font-mono mr-2">#{i.number}</span>
                           {i.title}
                         </div>
                         {i.labels.length > 0 && (
@@ -449,7 +449,7 @@ function GitHubPanel(props: {
                             {i.labels.slice(0, 5).map((l) => (
                               <span
                                 key={l.name}
-                                className="text-[11px] px-2 py-0.5 rounded-full bg-muted/40 border border-border text-white/80"
+                                className="text-[11px] px-2 py-0.5 rounded-full bg-muted/40 border border-border text-muted-foreground"
                               >
                                 {l.name}
                               </span>
@@ -462,22 +462,22 @@ function GitHubPanel(props: {
                           <FiCheck size={13} />
                         </span>
                       ) : (
-                        <FiChevronRight size={15} className="text-white/40 shrink-0 mt-1" />
+                        <FiChevronRight size={15} className="text-muted-foreground shrink-0 mt-1" />
                       )}
                     </div>
                   </button>
                 );
               })}
               {filteredIssues.length === 0 && (
-                <p className="text-sm text-white/60 py-4">No issues match &quot;{issueSearch}&quot;.</p>
+                <p className="text-sm text-muted-foreground py-4">No issues match &quot;{issueSearch}&quot;.</p>
               )}
             </div>
-            <p className="text-[12px] text-white/55 mt-3">
+            <p className="text-[12px] text-muted-foreground mt-3">
               Skipping is fine — we&apos;ll analyze the whole repo and recommend issues for you.
             </p>
           </>
         ) : (
-          <p className="text-sm text-white/70 py-2">
+          <p className="text-sm text-muted-foreground py-2">
             No open issues found in this repo. We&apos;ll analyze the repo on its own.
           </p>
         )}
@@ -494,16 +494,16 @@ function GitHubPanel(props: {
       />
 
       {repos.length === 0 ? (
-        <p className="text-sm text-white/70">No repos found on your GitHub yet.</p>
+        <p className="text-sm text-muted-foreground">No repos found on your GitHub yet.</p>
       ) : (
         <>
           <div className="relative mb-3">
-            <FiSearch size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50" />
+            <FiSearch size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input
               value={repoSearch}
               onChange={(e) => setRepoSearch(e.target.value)}
               placeholder="Search your repos…"
-              className="w-full bg-background border border-border rounded-lg pl-9 pr-3 h-10 text-sm text-white placeholder:text-white/40 focus:outline-none focus:border-crimson/50 focus:ring-2 focus:ring-crimson/15 transition-all"
+              className="w-full bg-background border border-border rounded-lg pl-9 pr-3 h-10 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-crimson/50 focus:ring-2 focus:ring-crimson/15 transition-all"
             />
           </div>
           <div className="max-h-[400px] overflow-y-auto space-y-2 pr-1">
@@ -515,15 +515,15 @@ function GitHubPanel(props: {
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 text-[14px] font-semibold truncate text-white">
-                      {r.private && <FiLock size={12} className="text-white/50 shrink-0" />}
+                    <div className="flex items-center gap-2 text-[14px] font-semibold truncate text-foreground">
+                      {r.private && <FiLock size={12} className="text-muted-foreground shrink-0" />}
                       <span className="truncate">{r.full_name}</span>
-                      {r.fork && <span className="text-[11px] text-white/50 font-mono">(fork)</span>}
+                      {r.fork && <span className="text-[11px] text-muted-foreground font-mono">(fork)</span>}
                     </div>
                     {r.description && (
-                      <p className="text-[12.5px] text-white/65 mt-1 truncate">{r.description}</p>
+                      <p className="text-[12.5px] text-muted-foreground mt-1 truncate">{r.description}</p>
                     )}
-                    <div className="flex items-center gap-3 mt-2 text-[11.5px] text-white/55">
+                    <div className="flex items-center gap-3 mt-2 text-[11.5px] text-muted-foreground">
                       {r.language && (
                         <span className="inline-flex items-center gap-1">
                           <span className="w-2 h-2 rounded-full bg-crimson" />
@@ -536,12 +536,12 @@ function GitHubPanel(props: {
                       <span>{r.open_issues_count} open issues</span>
                     </div>
                   </div>
-                  <FiChevronRight size={15} className="text-white/40 group-hover:text-crimson shrink-0 mt-1.5" />
+                  <FiChevronRight size={15} className="text-muted-foreground group-hover:text-crimson shrink-0 mt-1.5" />
                 </div>
               </button>
             ))}
             {filteredRepos.length === 0 && (
-              <p className="text-sm text-white/60 py-4">No repos match &quot;{repoSearch}&quot;.</p>
+              <p className="text-sm text-muted-foreground py-4">No repos match &quot;{repoSearch}&quot;.</p>
             )}
           </div>
         </>
@@ -565,31 +565,31 @@ function UrlPanel({
       />
       <div className="space-y-4">
         <div>
-          <label className="block text-[13px] font-semibold text-white mb-1.5">Issue URL</label>
+          <label className="block text-[13px] font-semibold text-foreground mb-1.5">Issue URL</label>
           <input
             value={issueUrl}
             onChange={(e) => setIssueUrl(e.target.value)}
             placeholder="https://github.com/owner/repo/issues/123"
-            className="w-full bg-background border border-border rounded-lg px-3.5 h-11 text-[14px] text-white placeholder:text-white/35 focus:outline-none focus:border-crimson/50 focus:ring-2 focus:ring-crimson/15 transition-all font-mono"
+            className="w-full bg-background border border-border rounded-lg px-3.5 h-11 text-[14px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-crimson/50 focus:ring-2 focus:ring-crimson/15 transition-all font-mono"
           />
-          <p className="text-[12px] text-white/55 mt-1.5">Most specific — recommended when you have an issue in mind.</p>
+          <p className="text-[12px] text-muted-foreground mt-1.5">Most specific — recommended when you have an issue in mind.</p>
         </div>
 
         <div className="flex items-center gap-3">
           <div className="flex-1 h-px bg-border" />
-          <span className="text-[10.5px] uppercase tracking-[0.2em] text-white/45">or</span>
+          <span className="text-[10.5px] uppercase tracking-[0.2em] text-muted-foreground">or</span>
           <div className="flex-1 h-px bg-border" />
         </div>
 
         <div>
-          <label className="block text-[13px] font-semibold text-white mb-1.5">Repository URL</label>
+          <label className="block text-[13px] font-semibold text-foreground mb-1.5">Repository URL</label>
           <input
             value={repoUrl}
             onChange={(e) => setRepoUrl(e.target.value)}
             placeholder="https://github.com/owner/repo"
-            className="w-full bg-background border border-border rounded-lg px-3.5 h-11 text-[14px] text-white placeholder:text-white/35 focus:outline-none focus:border-crimson/50 focus:ring-2 focus:ring-crimson/15 transition-all font-mono"
+            className="w-full bg-background border border-border rounded-lg px-3.5 h-11 text-[14px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-crimson/50 focus:ring-2 focus:ring-crimson/15 transition-all font-mono"
           />
-          <p className="text-[12px] text-white/55 mt-1.5">We&apos;ll read the README, languages, and recent issues to recommend beginner-friendly ones.</p>
+          <p className="text-[12px] text-muted-foreground mt-1.5">We&apos;ll read the README, languages, and recent issues to recommend beginner-friendly ones.</p>
         </div>
       </div>
     </div>
@@ -611,9 +611,9 @@ function ErrorPanel({
         onChange={(e) => setErrorLog(e.target.value)}
         rows={10}
         placeholder={`TypeError: Cannot read properties of undefined (reading 'map')\n    at UserList (./components/UserList.tsx:42:15)\n    at renderWithHooks (./node_modules/react-dom/cjs/react-dom.js:14985:18)`}
-        className="w-full bg-background border border-border rounded-lg px-3.5 py-3 text-[13.5px] text-white placeholder:text-white/35 focus:outline-none focus:border-crimson/50 focus:ring-2 focus:ring-crimson/15 transition-all font-mono resize-y leading-relaxed"
+        className="w-full bg-background border border-border rounded-lg px-3.5 py-3 text-[13.5px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-crimson/50 focus:ring-2 focus:ring-crimson/15 transition-all font-mono resize-y leading-relaxed"
       />
-      <p className="text-[12px] text-white/55 mt-2">Tip: include the full stack trace if you have it — more context = better fix.</p>
+      <p className="text-[12px] text-muted-foreground mt-2">Tip: include the full stack trace if you have it — more context = better fix.</p>
     </div>
   );
 }
@@ -633,9 +633,9 @@ function ConflictPanel({
         onChange={(e) => setMergeConflict(e.target.value)}
         rows={10}
         placeholder={"<<<<<<< HEAD\nconst total = price * quantity;\n=======\nconst total = (price * quantity) + tax;\n>>>>>>> feature/add-tax"}
-        className="w-full bg-background border border-border rounded-lg px-3.5 py-3 text-[13.5px] text-white placeholder:text-white/35 focus:outline-none focus:border-crimson/50 focus:ring-2 focus:ring-crimson/15 transition-all font-mono resize-y leading-relaxed"
+        className="w-full bg-background border border-border rounded-lg px-3.5 py-3 text-[13.5px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-crimson/50 focus:ring-2 focus:ring-crimson/15 transition-all font-mono resize-y leading-relaxed"
       />
-      <p className="text-[12px] text-white/55 mt-2">Tip: include both sides AND a few lines of context above/below the conflict.</p>
+      <p className="text-[12px] text-muted-foreground mt-2">Tip: include both sides AND a few lines of context above/below the conflict.</p>
     </div>
   );
 }

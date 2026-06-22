@@ -148,9 +148,9 @@ export function ContributionFlow({ analysisId, hasSuggestions, repoLabel }: Prop
               <p className="text-[11px] uppercase tracking-[0.2em] text-crimson font-mono mb-1">
                 Stage 6 · Contribution flow
               </p>
-              <h3 className="text-base font-semibold text-white">Push to GitHub &amp; open a pull request</h3>
-              <p className="text-[13px] text-white/70 mt-1 max-w-xl">
-                We&apos;ll fork {repoLabel ? <span className="font-mono text-white/90">{repoLabel}</span> : "the repo"},
+              <h3 className="text-base font-semibold text-foreground">Push to GitHub &amp; open a pull request</h3>
+              <p className="text-[13px] text-muted-foreground mt-1 max-w-xl">
+                We&apos;ll fork {repoLabel ? <span className="font-mono text-foreground/90">{repoLabel}</span> : "the repo"},
                 create a branch, apply each code suggestion, commit, push, and open the PR — all from this page.
               </p>
             </div>
@@ -201,8 +201,8 @@ export function ContributionFlow({ analysisId, hasSuggestions, repoLabel }: Prop
                   status === "success" ? "text-emerald-300 border-emerald-500/40 bg-emerald-500/10" :
                   status === "running" ? "text-crimson border-crimson/40 bg-crimson/10" :
                   status === "failed"  ? "text-red-300 border-red-500/40 bg-red-500/10" :
-                  status === "skipped" ? "text-white/50 border-white/15 bg-white/[0.03]" :
-                                         "text-white/40 border-border bg-background";
+                  status === "skipped" ? "text-muted-foreground border-border bg-muted/30" :
+                                         "text-muted-foreground border-border bg-background";
                 return (
                   <li key={key} className="px-6 py-4 flex items-start gap-4">
                     <div className={`w-9 h-9 rounded-lg border flex items-center justify-center shrink-0 ${tone}`}>
@@ -214,11 +214,11 @@ export function ContributionFlow({ analysisId, hasSuggestions, repoLabel }: Prop
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <p className={`text-[13.5px] font-medium ${status === "pending" ? "text-white/55" : "text-white"}`}>
+                        <p className={`text-[13.5px] font-medium ${status === "pending" ? "text-muted-foreground" : "text-foreground"}`}>
                           {meta.title}
                         </p>
                         {status === "skipped" && (
-                          <span className="text-[10px] uppercase tracking-wider font-mono text-white/50">skipped</span>
+                          <span className="text-[10px] uppercase tracking-wider font-mono text-muted-foreground">skipped</span>
                         )}
                         {status === "success" && (
                           <span className="text-[10px] uppercase tracking-wider font-mono text-emerald-300/80">done</span>
@@ -227,9 +227,9 @@ export function ContributionFlow({ analysisId, hasSuggestions, repoLabel }: Prop
                           <span className="text-[10px] uppercase tracking-wider font-mono text-red-300/80">failed</span>
                         )}
                       </div>
-                      <p className="text-[12px] text-white/55 mt-0.5">{meta.subtitle}</p>
+                      <p className="text-[12px] text-muted-foreground mt-0.5">{meta.subtitle}</p>
                       {detail && (
-                        <pre className="text-[12px] text-white/75 font-mono mt-1.5 whitespace-pre-wrap break-words leading-relaxed">
+                        <pre className="text-[12px] text-muted-foreground font-mono mt-1.5 whitespace-pre-wrap break-words leading-relaxed">
                           {detail}
                         </pre>
                       )}
@@ -272,10 +272,10 @@ export function ContributionFlow({ analysisId, hasSuggestions, repoLabel }: Prop
                       </span>
                     )}
                   </p>
-                  <p className="text-[12.5px] text-white/75 mt-0.5">
+                  <p className="text-[12.5px] text-muted-foreground mt-0.5">
                     {run.files_changed} file(s) committed
                     {run.files_skipped > 0 ? `, ${run.files_skipped} skipped — see the log above` : ""}
-                    {run.branch_name && <> · branch <span className="font-mono text-white/90">{run.branch_name}</span></>}
+                    {run.branch_name && <> · branch <span className="font-mono text-foreground/90">{run.branch_name}</span></>}
                   </p>
                 </div>
                 <a
@@ -295,10 +295,10 @@ export function ContributionFlow({ analysisId, hasSuggestions, repoLabel }: Prop
               <p className="text-sm font-semibold text-red-200 flex items-center gap-2">
                 <FiAlertTriangle size={13} /> Contribution didn&apos;t complete
               </p>
-              <p className="text-[12.5px] text-white/80 mt-1 leading-relaxed">
+              <p className="text-[12.5px] text-muted-foreground mt-1 leading-relaxed">
                 {run.error || "Something went wrong — check the step log above."}
               </p>
-              <p className="text-[12px] text-white/55 mt-2">
+              <p className="text-[12px] text-muted-foreground mt-2">
                 You can still follow the manual Git commands below as a fallback.
               </p>
             </div>

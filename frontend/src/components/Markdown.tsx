@@ -26,7 +26,7 @@ function CodeBlock({ children }: { children: string }) {
         {copied ? <FiCheck size={11} /> : <FiCopy size={11} />}
         {copied ? "Copied" : "Copy"}
       </button>
-      <pre className="overflow-x-auto px-4 py-3 text-[12.5px] leading-relaxed font-mono text-white/90">
+      <pre className="overflow-x-auto px-4 py-3 text-[12.5px] leading-relaxed font-mono text-foreground/90">
         <code>{children}</code>
       </pre>
     </div>
@@ -37,24 +37,24 @@ export function Markdown({ children, className }: MarkdownProps) {
   return (
     <div
       className={
-        "text-[14px] text-white/90 leading-relaxed " +
-        "[&_p]:my-2.5 [&_p]:text-white/85 " +
-        "[&_h1]:text-lg [&_h1]:font-semibold [&_h1]:mt-5 [&_h1]:mb-2 [&_h1]:text-white " +
-        "[&_h2]:text-base [&_h2]:font-semibold [&_h2]:mt-5 [&_h2]:mb-2 [&_h2]:text-white " +
-        "[&_h3]:text-sm [&_h3]:font-semibold [&_h3]:mt-4 [&_h3]:mb-1.5 [&_h3]:text-white " +
-        "[&_h4]:text-sm [&_h4]:font-semibold [&_h4]:mt-3 [&_h4]:mb-1 [&_h4]:text-white/90 " +
+        "text-[14px] text-foreground leading-relaxed " +
+        "[&_p]:my-2.5 [&_p]:text-foreground/85 " +
+        "[&_h1]:text-lg [&_h1]:font-semibold [&_h1]:mt-5 [&_h1]:mb-2 [&_h1]:text-foreground " +
+        "[&_h2]:text-base [&_h2]:font-semibold [&_h2]:mt-5 [&_h2]:mb-2 [&_h2]:text-foreground " +
+        "[&_h3]:text-sm [&_h3]:font-semibold [&_h3]:mt-4 [&_h3]:mb-1.5 [&_h3]:text-foreground " +
+        "[&_h4]:text-sm [&_h4]:font-semibold [&_h4]:mt-3 [&_h4]:mb-1 [&_h4]:text-foreground/90 " +
         "[&_ul]:my-2.5 [&_ul]:pl-5 [&_ul]:list-disc [&_ul]:space-y-1.5 " +
         "[&_ol]:my-2.5 [&_ol]:pl-5 [&_ol]:list-decimal [&_ol]:space-y-1.5 " +
-        "[&_li]:text-white/85 [&_li_p]:my-0 " +
+        "[&_li]:text-foreground/85 [&_li_p]:my-0 " +
         "[&_li::marker]:text-crimson " +
-        "[&_strong]:text-white [&_strong]:font-semibold " +
-        "[&_em]:italic [&_em]:text-white/90 " +
+        "[&_strong]:text-foreground [&_strong]:font-semibold " +
+        "[&_em]:italic [&_em]:text-foreground/90 " +
         "[&_a]:text-crimson [&_a]:underline [&_a]:underline-offset-2 hover:[&_a]:text-crimson-dark " +
         "[&_blockquote]:border-l-2 [&_blockquote]:border-crimson/50 [&_blockquote]:pl-4 [&_blockquote]:my-3 [&_blockquote]:text-muted-foreground [&_blockquote]:italic " +
         "[&_hr]:border-border [&_hr]:my-5 " +
         "[&_table]:my-3 [&_table]:w-full [&_table]:text-[12.5px] [&_table]:border [&_table]:border-border [&_table]:rounded-md [&_table]:overflow-hidden " +
         "[&_th]:bg-background [&_th]:px-3 [&_th]:py-2 [&_th]:text-left [&_th]:font-semibold [&_th]:border-b [&_th]:border-border " +
-        "[&_td]:px-3 [&_td]:py-2 [&_td]:border-b [&_td]:border-border [&_td]:text-white/85 " +
+        "[&_td]:px-3 [&_td]:py-2 [&_td]:border-b [&_td]:border-border [&_td]:text-foreground/85 " +
         "[&>:first-child]:mt-0 [&>:last-child]:mb-0 " +
         (className || "")
       }

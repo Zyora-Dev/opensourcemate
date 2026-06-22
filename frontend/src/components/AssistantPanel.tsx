@@ -181,7 +181,7 @@ export function AssistantPanel({ analysisId, contextLabel }: AssistantPanelProps
                     <FiCpu size={14} />
                   </span>
                   <div className="min-w-0">
-                    <h3 className="text-[14px] font-semibold tracking-tight text-white truncate">AI mate</h3>
+                    <h3 className="text-[14px] font-semibold tracking-tight text-foreground truncate">AI mate</h3>
                     <p className="text-[11px] text-muted-foreground truncate">
                       Grounded in this analysis{contextLabel ? ` · ${contextLabel}` : ""}
                     </p>
@@ -189,7 +189,7 @@ export function AssistantPanel({ analysisId, contextLabel }: AssistantPanelProps
                 </div>
                 <button
                   onClick={() => setOpen(false)}
-                  className="w-8 h-8 rounded-lg border border-border bg-background/40 text-muted-foreground hover:text-white hover:border-crimson/40 flex items-center justify-center transition-colors"
+                  className="w-8 h-8 rounded-lg border border-border bg-background/40 text-muted-foreground hover:text-foreground hover:border-crimson/40 flex items-center justify-center transition-colors"
                   aria-label="Close assistant"
                 >
                   <FiX size={14} />
@@ -232,7 +232,7 @@ export function AssistantPanel({ analysisId, contextLabel }: AssistantPanelProps
                     onKeyDown={onKeyDown}
                     placeholder="Ask anything about this analysis…"
                     rows={1}
-                    className="flex-1 resize-none bg-transparent text-[13.5px] text-white placeholder:text-white/40 focus:outline-none py-1.5 leading-relaxed max-h-40"
+                    className="flex-1 resize-none bg-transparent text-[13.5px] text-foreground placeholder:text-muted-foreground focus:outline-none py-1.5 leading-relaxed max-h-40"
                     disabled={sending}
                   />
                   <button
@@ -266,7 +266,7 @@ function Bubble({ role, content }: { role: "user" | "assistant"; content: string
     return (
       <div className="flex justify-end">
         <div className="max-w-[85%] rounded-xl bg-crimson/15 border border-crimson/25 px-3.5 py-2.5">
-          <p className="text-[13.5px] text-white whitespace-pre-wrap leading-relaxed">{content}</p>
+          <p className="text-[13.5px] text-foreground whitespace-pre-wrap leading-relaxed">{content}</p>
         </div>
       </div>
     );
@@ -276,7 +276,7 @@ function Bubble({ role, content }: { role: "user" | "assistant"; content: string
       <span className="w-7 h-7 rounded-lg bg-crimson/10 border border-crimson/25 text-crimson flex items-center justify-center shrink-0 mt-0.5">
         <FiCpu size={12} />
       </span>
-      <div className="max-w-[88%] rounded-xl bg-surface border border-border px-3.5 py-2.5 text-[13.5px] text-white/90 leading-relaxed min-w-0">
+      <div className="max-w-[88%] rounded-xl bg-surface border border-border px-3.5 py-2.5 text-[13.5px] text-foreground/90 leading-relaxed min-w-0">
         <Markdown>{content}</Markdown>
       </div>
     </div>
@@ -308,7 +308,7 @@ function EmptyState({ onPick }: { onPick: (s: string) => void }) {
           <FiZap size={15} />
         </span>
         <div>
-          <p className="text-[13.5px] font-semibold text-white">Stuck on something?</p>
+          <p className="text-[13.5px] font-semibold text-foreground">Stuck on something?</p>
           <p className="text-[12px] text-muted-foreground">Ask anything — I&apos;ve read the whole analysis.</p>
         </div>
       </div>

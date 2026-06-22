@@ -88,7 +88,7 @@ export default function AnalysisResultPage({ params }: { params: Promise<{ id: s
       <div className="min-h-screen bg-background flex items-center justify-center px-6">
         <div className="text-center">
           <FiAlertCircle className="mx-auto text-crimson mb-3" size={28} />
-          <p className="text-sm text-white">{error || "Analysis not found"}</p>
+          <p className="text-sm text-foreground">{error || "Analysis not found"}</p>
           <button onClick={() => router.push("/analyze")} className="mt-4 text-xs px-3 h-8 rounded-md bg-crimson text-white inline-flex items-center gap-1.5">
             New analysis
           </button>
@@ -268,7 +268,7 @@ export default function AnalysisResultPage({ params }: { params: Promise<{ id: s
                         <span className="text-[11px] font-mono text-crimson bg-crimson/10 border border-crimson/20 rounded px-1.5 py-0.5 shrink-0">
                           #{i + 1}
                         </span>
-                        <code className="text-[13.5px] font-mono text-white font-medium break-all">
+                        <code className="text-[13.5px] font-mono text-foreground font-medium break-all">
                           {s.file || "(file unknown)"}
                         </code>
                         {s.lines && (
@@ -283,7 +283,7 @@ export default function AnalysisResultPage({ params }: { params: Promise<{ id: s
                         )}
                       </div>
                       {s.explanation && (
-                        <p className="text-[13px] text-white/75 mt-2 leading-relaxed">{s.explanation}</p>
+                        <p className="text-[13px] text-muted-foreground mt-2 leading-relaxed">{s.explanation}</p>
                       )}
                     </div>
                   </div>
@@ -305,7 +305,7 @@ export default function AnalysisResultPage({ params }: { params: Promise<{ id: s
                           </button>
                         )}
                       </div>
-                      <pre className="p-3 text-[12.5px] font-mono text-white/90 overflow-x-auto leading-relaxed whitespace-pre">
+                      <pre className="p-3 text-[12.5px] font-mono text-foreground/90 overflow-x-auto leading-relaxed whitespace-pre">
 {s.before || <span className="text-muted-foreground italic">(new file — no existing code)</span>}
                       </pre>
                     </div>
@@ -325,7 +325,7 @@ export default function AnalysisResultPage({ params }: { params: Promise<{ id: s
                           </button>
                         )}
                       </div>
-                      <pre className="p-3 text-[12.5px] font-mono text-white/90 overflow-x-auto leading-relaxed whitespace-pre">
+                      <pre className="p-3 text-[12.5px] font-mono text-foreground/90 overflow-x-auto leading-relaxed whitespace-pre">
 {s.after || <span className="text-muted-foreground italic">(deleted)</span>}
                       </pre>
                     </div>
@@ -367,7 +367,7 @@ export default function AnalysisResultPage({ params }: { params: Promise<{ id: s
               {cmds.map((c, i) => (
                 <li key={i} className="px-6 py-3 flex items-center gap-3 group hover:bg-crimson/[0.03] transition-colors">
                   <span className="text-[11px] font-mono text-crimson w-5 shrink-0">{i + 1}</span>
-                  <code className="text-[13px] font-mono text-white/90 flex-1">{c}</code>
+                  <code className="text-[13px] font-mono text-foreground/90 flex-1">{c}</code>
                   <button onClick={() => copy(c, `cmd-${i}`)}
                     className="opacity-0 group-hover:opacity-100 text-xs text-muted-foreground hover:text-crimson transition-all">
                     {copied === `cmd-${i}` ? <FiCheck size={12} /> : <FiCopy size={12} />}

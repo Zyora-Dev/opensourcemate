@@ -68,7 +68,7 @@ export default function HistoryPage() {
                 >
                   <div className="flex items-start justify-between gap-3 flex-wrap">
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm text-white truncate font-medium">
+                      <p className="text-sm text-foreground truncate font-medium">
                         {it.repo_name || it.issue_url || `Analysis #${it.id}`}
                       </p>
                       {it.summary && (

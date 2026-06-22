@@ -89,7 +89,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <TooltipProvider delayDuration={200}>
-      <div className="min-h-screen bg-background relative text-white">
+      <div className="min-h-screen bg-background relative text-foreground">
         {/* Background fx (global) */}
         <div className="fixed inset-0 grid-bg opacity-50 pointer-events-none" />
         <div className="fixed top-[-200px] left-1/2 -translate-x-1/2 w-[1100px] h-[500px] bg-crimson/8 rounded-full blur-[120px] pointer-events-none" />
@@ -114,7 +114,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <FiCode size={16} />
             </span>
             {!collapsed && (
-              <span className="text-white text-[15px] font-semibold tracking-tight whitespace-nowrap">
+              <span className="text-foreground text-[15px] font-semibold tracking-tight whitespace-nowrap">
                 OpenSource<span className="text-crimson">Mate</span>
               </span>
             )}
@@ -138,7 +138,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     collapsed ? "justify-center px-0" : "px-3",
                     active
                       ? "bg-crimson/15 border-crimson/35 text-crimson"
-                      : "bg-transparent border-transparent text-muted-foreground hover:text-white hover:bg-muted/30"
+                      : "bg-transparent border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/30"
                   )}
                 >
                   <Icon size={16} className="shrink-0" />
@@ -170,7 +170,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               target="_blank"
               rel="noreferrer"
               className={cn(
-                "w-full flex items-center gap-3 rounded-xl h-10 text-muted-foreground hover:text-white hover:bg-muted/30 transition-all",
+                "w-full flex items-center gap-3 rounded-xl h-10 text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all",
                 collapsed ? "justify-center" : "px-3"
               )}
             >
@@ -207,7 +207,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               onClick={toggleCollapsed}
               aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
               className={cn(
-                "w-full flex items-center gap-3 rounded-xl h-9 mt-1 border border-border bg-background/40 hover:bg-muted/30 text-muted-foreground hover:text-white transition-all",
+                "w-full flex items-center gap-3 rounded-xl h-9 mt-1 border border-border bg-background/40 hover:bg-muted/30 text-muted-foreground hover:text-foreground transition-all",
                 collapsed ? "justify-center" : "px-3"
               )}
             >
@@ -239,13 +239,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <span className="w-9 h-9 rounded-xl bg-crimson/15 border border-crimson/30 text-crimson flex items-center justify-center">
                 <FiCode size={16} />
               </span>
-              <span className="text-white text-[15px] font-semibold tracking-tight">
+              <span className="text-foreground text-[15px] font-semibold tracking-tight">
                 OpenSource<span className="text-crimson">Mate</span>
               </span>
             </div>
             <button
               onClick={() => setMobileOpen(false)}
-              className="w-8 h-8 rounded-lg text-muted-foreground hover:text-white hover:bg-muted/30 flex items-center justify-center"
+              className="w-8 h-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/30 flex items-center justify-center"
             >
               <FiX size={16} />
             </button>
@@ -264,7 +264,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     "w-full flex items-center gap-3 rounded-xl h-10 px-3 border transition-all",
                     active
                       ? "bg-crimson/15 border-crimson/35 text-crimson"
-                      : "bg-transparent border-transparent text-muted-foreground hover:text-white hover:bg-muted/30"
+                      : "bg-transparent border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/30"
                   )}
                 >
                   <Icon size={16} />
@@ -300,7 +300,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 {/* Mobile menu */}
                 <button
                   onClick={() => setMobileOpen(true)}
-                  className="md:hidden w-9 h-9 rounded-lg border border-border bg-background/40 text-muted-foreground hover:text-white flex items-center justify-center"
+                  className="md:hidden w-9 h-9 rounded-lg border border-border bg-background/40 text-muted-foreground hover:text-foreground flex items-center justify-center"
                 >
                   <FiMenu size={16} />
                 </button>
@@ -345,7 +345,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                         </span>
                       )}
                       <div className="hidden lg:block leading-tight text-left">
-                        <p className="text-xs font-medium text-white max-w-[140px] truncate">
+                        <p className="text-xs font-medium text-foreground max-w-[140px] truncate">
                           {user.name || "Contributor"}
                         </p>
                         <p className="text-[10.5px] text-muted-foreground max-w-[140px] truncate">

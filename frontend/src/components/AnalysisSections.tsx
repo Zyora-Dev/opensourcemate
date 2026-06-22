@@ -222,7 +222,7 @@ export function SectionCard({ section, defaultOpen }: SectionCardProps) {
                 {meta.eyebrow}
               </p>
             )}
-            <h3 className="text-[15px] font-semibold text-white truncate">{section.title}</h3>
+            <h3 className="text-[15px] font-semibold text-foreground truncate">{section.title}</h3>
           </div>
         </div>
         <div className="flex items-center gap-3 shrink-0">
@@ -310,7 +310,7 @@ export function SectionNav({ sections }: SectionNavProps) {
               className={`shrink-0 inline-flex items-center gap-1.5 text-[12px] px-2.5 py-1.5 rounded-full border transition-all ${
                 isActive
                   ? `${meta.chip} border-current`
-                  : "bg-surface border-border text-white/75 hover:text-white hover:border-crimson/40"
+                  : "bg-surface border-border text-muted-foreground hover:text-foreground hover:border-crimson/40"
               }`}
             >
               <meta.Icon size={11} />

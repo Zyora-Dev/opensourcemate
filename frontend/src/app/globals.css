@@ -140,25 +140,25 @@ body {
 /* ----- Light-theme overrides for dark-mode-first utility classes ----- */
 /* Remap text-white/* to foreground/muted-foreground in light mode so the
    existing components stay readable without rewriting every page. */
-.light :is(div, p, span, h1, h2, h3, h4, h5, h6, li, td, th, pre, code, strong, em, label, blockquote)[class~="text-white"],
-.light :is(div, p, span, h1, h2, h3, h4, h5, h6, li, td, th, pre, code, strong, em, label, blockquote)[class~="text-white/95"],
-.light :is(div, p, span, h1, h2, h3, h4, h5, h6, li, td, th, pre, code, strong, em, label, blockquote)[class~="text-white/90"],
-.light :is(div, p, span, h1, h2, h3, h4, h5, h6, li, td, th, pre, code, strong, em, label, blockquote)[class~="text-white/85"],
-.light :is(div, p, span, h1, h2, h3, h4, h5, h6, li, td, th, pre, code, strong, em, label, blockquote)[class~="text-white/80"],
-.light :is(div, p, span, h1, h2, h3, h4, h5, h6, li, td, th, pre, code, strong, em, label, blockquote)[class~="text-white/75"] {
+.light :is(div, p, span, h1, h2, h3, h4, h5, h6, li, td, th, pre, code, strong, em, label, blockquote, input, textarea, select)[class~="text-white"],
+.light :is(div, p, span, h1, h2, h3, h4, h5, h6, li, td, th, pre, code, strong, em, label, blockquote, input, textarea, select)[class~="text-white/95"],
+.light :is(div, p, span, h1, h2, h3, h4, h5, h6, li, td, th, pre, code, strong, em, label, blockquote, input, textarea, select)[class~="text-white/90"],
+.light :is(div, p, span, h1, h2, h3, h4, h5, h6, li, td, th, pre, code, strong, em, label, blockquote, input, textarea, select)[class~="text-white/85"],
+.light :is(div, p, span, h1, h2, h3, h4, h5, h6, li, td, th, pre, code, strong, em, label, blockquote, input, textarea, select)[class~="text-white/80"],
+.light :is(div, p, span, h1, h2, h3, h4, h5, h6, li, td, th, pre, code, strong, em, label, blockquote, input, textarea, select)[class~="text-white/75"] {
   color: var(--color-foreground) !important;
 }
 
-.light :is(div, p, span, li, td, th, pre, code, strong, em, label)[class~="text-white/70"],
-.light :is(div, p, span, li, td, th, pre, code, strong, em, label)[class~="text-white/65"],
-.light :is(div, p, span, li, td, th, pre, code, strong, em, label)[class~="text-white/60"],
-.light :is(div, p, span, li, td, th, pre, code, strong, em, label)[class~="text-white/55"],
-.light :is(div, p, span, li, td, th, pre, code, strong, em, label)[class~="text-white/50"],
-.light :is(div, p, span, li, td, th, pre, code, strong, em, label)[class~="text-white/45"],
-.light :is(div, p, span, li, td, th, pre, code, strong, em, label)[class~="text-white/40"],
-.light :is(div, p, span, li, td, th, pre, code, strong, em, label)[class~="text-white/35"],
-.light :is(div, p, span, li, td, th, pre, code, strong, em, label)[class~="text-white/30"],
-.light :is(div, p, span, li, td, th, pre, code, strong, em, label)[class~="text-white/25"] {
+.light :is(div, p, span, li, td, th, pre, code, strong, em, label, input, textarea, select)[class~="text-white/70"],
+.light :is(div, p, span, li, td, th, pre, code, strong, em, label, input, textarea, select)[class~="text-white/65"],
+.light :is(div, p, span, li, td, th, pre, code, strong, em, label, input, textarea, select)[class~="text-white/60"],
+.light :is(div, p, span, li, td, th, pre, code, strong, em, label, input, textarea, select)[class~="text-white/55"],
+.light :is(div, p, span, li, td, th, pre, code, strong, em, label, input, textarea, select)[class~="text-white/50"],
+.light :is(div, p, span, li, td, th, pre, code, strong, em, label, input, textarea, select)[class~="text-white/45"],
+.light :is(div, p, span, li, td, th, pre, code, strong, em, label, input, textarea, select)[class~="text-white/40"],
+.light :is(div, p, span, li, td, th, pre, code, strong, em, label, input, textarea, select)[class~="text-white/35"],
+.light :is(div, p, span, li, td, th, pre, code, strong, em, label, input, textarea, select)[class~="text-white/30"],
+.light :is(div, p, span, li, td, th, pre, code, strong, em, label, input, textarea, select)[class~="text-white/25"] {
   color: var(--color-muted-foreground) !important;
 }
 
@@ -202,8 +202,16 @@ body {
   background-color: var(--color-muted) !important;
 }
 
+.light :is(input, textarea)[class~="placeholder:text-white/25"]::placeholder,
+.light :is(input, textarea)[class~="placeholder:text-white/30"]::placeholder,
+.light :is(input, textarea)[class~="placeholder:text-white/35"]::placeholder,
 .light :is(input, textarea)[class~="placeholder:text-white/40"]::placeholder,
-.light :is(input, textarea)[class~="placeholder:text-white/50"]::placeholder {
+.light :is(input, textarea)[class~="placeholder:text-white/45"]::placeholder,
+.light :is(input, textarea)[class~="placeholder:text-white/50"]::placeholder,
+.light :is(input, textarea)[class~="placeholder:text-white/55"]::placeholder,
+.light :is(input, textarea)[class~="placeholder:text-white/60"]::placeholder,
+.light :is(input, textarea)[class~="placeholder:text-white/65"]::placeholder,
+.light :is(input, textarea)[class~="placeholder:text-white/70"]::placeholder {
   color: var(--color-muted-foreground) !important;
 }
 
