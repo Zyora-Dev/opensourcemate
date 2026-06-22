@@ -222,7 +222,7 @@ export function SectionCard({ section, defaultOpen }: SectionCardProps) {
                 {meta.eyebrow}
               </p>
             )}
-            <h3 className="text-[15px] font-semibold text-foreground truncate">{section.title}</h3>
+            <h3 className="text-[15px] font-semibold text-foreground truncate">{cleanTitle(section.title)}</h3>
           </div>
         </div>
         <div className="flex items-center gap-3 shrink-0">
@@ -324,8 +324,22 @@ export function SectionNav({ sections }: SectionNavProps) {
 }
 
 function shortTitle(title: string): string {
-  // Drop emoji and trim parenthetical clauses like "(most important section)"
-  const cleaned = title.replace(/\p{Extended_Pictographic}/gu, "").replace(/\s*\([^)]*\)\s*/g, " ").trim();
+  // Strip emoji + leading symbols/box-drawings, then trim parenthetical clauses
+  // like "(most important section)".
+  const cleaned = cleanTitle(title).replace(/\s*\([^)]*\)\s*/g, " ").trim();
   if (cleaned.length <= 28) return cleaned;
   return cleaned.slice(0, 26) + "…";
+}
+
+/** Strip leading non-letter/non-digit characters from a heading.
+ *  Removes pictographic emoji, geometric box symbols (U+25A1, U+25FB, etc.),
+ *  variation selectors, and stray punctuation that AI models sometimes prepend
+ *  to H2 titles. Preserves the meaningful text. */
+function cleanTitle(title: string): string {
+  if (!title) return "";
+  return title
+    .replace(/^[^\p{L}\p{N}]+/u, "")
+    .replace(/[\p{Extended_Pictographic}\uFE0F\u200D]/gu, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
