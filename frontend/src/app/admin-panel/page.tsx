@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   FiLock, FiUsers, FiFileText, FiGitPullRequest, FiPackage, FiActivity,
   FiLoader, FiAlertCircle, FiLogOut, FiSearch, FiRefreshCw, FiX, FiChevronRight,
-  FiCheckCircle, FiXCircle, FiExternalLink, FiGithub,
+  FiCheckCircle, FiXCircle, FiExternalLink, FiGithub, FiEye, FiEyeOff,
 } from "react-icons/fi";
 import { api } from "@/lib/api";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -113,6 +113,7 @@ function StatusPill({ value }: { value: string | null | undefined }) {
 function LoginCard({ onLoggedIn }: { onLoggedIn: (token: string) => void }) {
   const [u, setU] = useState("");
   const [p, setP] = useState("");
+  const [showP, setShowP] = useState(false);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -121,7 +122,7 @@ function LoginCard({ onLoggedIn }: { onLoggedIn: (token: string) => void }) {
     setErr(null);
     setLoading(true);
     try {
-      const res = await api.adminLogin(u.trim(), p);
+      const res = await api.adminLogin(u.trim(), p.trim());
       onLoggedIn(res.token);
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Login failed");
@@ -132,7 +133,7 @@ function LoginCard({ onLoggedIn }: { onLoggedIn: (token: string) => void }) {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 bg-background">
-      <form onSubmit={submit} className="w-full max-w-sm rounded-2xl border border-border bg-surface/60 backdrop-blur-md p-8 shadow-2xl">
+      <form onSubmit={submit} autoComplete="off" className="w-full max-w-sm rounded-2xl border border-border bg-surface/60 backdrop-blur-md p-8 shadow-2xl">
         <div className="flex items-center gap-2.5 mb-6">
           <span className="w-9 h-9 rounded-lg bg-crimson/15 border border-crimson/30 text-crimson flex items-center justify-center">
             <FiLock size={16} />
@@ -151,16 +152,29 @@ function LoginCard({ onLoggedIn }: { onLoggedIn: (token: string) => void }) {
 
         <label className="block text-[12px] font-medium text-foreground mb-1.5">Username</label>
         <input
-          value={u} onChange={(e) => setU(e.target.value)} autoFocus required autoComplete="username"
+          name="osm-admin-user"
+          value={u} onChange={(e) => setU(e.target.value)} autoFocus required
+          autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck={false}
           className="w-full bg-background border border-border rounded-lg px-3.5 h-10 text-[14px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-crimson/50 focus:ring-2 focus:ring-crimson/15 mb-4"
         />
 
         <label className="block text-[12px] font-medium text-foreground mb-1.5">Password</label>
-        <input
-          type="password"
-          value={p} onChange={(e) => setP(e.target.value)} required autoComplete="current-password"
-          className="w-full bg-background border border-border rounded-lg px-3.5 h-10 text-[14px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-crimson/50 focus:ring-2 focus:ring-crimson/15 mb-6"
-        />
+        <div className="relative mb-6">
+          <input
+            name="osm-admin-pass"
+            type={showP ? "text" : "password"}
+            value={p} onChange={(e) => setP(e.target.value)} required
+            autoComplete="new-password" autoCorrect="off" autoCapitalize="off" spellCheck={false}
+            className="w-full bg-background border border-border rounded-lg px-3.5 pr-10 h-10 text-[14px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-crimson/50 focus:ring-2 focus:ring-crimson/15"
+          />
+          <button
+            type="button" tabIndex={-1} onClick={() => setShowP((v) => !v)}
+            aria-label={showP ? "Hide password" : "Show password"}
+            className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/40 flex items-center justify-center"
+          >
+            {showP ? <FiEyeOff size={14} /> : <FiEye size={14} />}
+          </button>
+        </div>
 
         <button
           type="submit" disabled={loading || !u || !p}
