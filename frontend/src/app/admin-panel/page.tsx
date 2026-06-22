@@ -82,6 +82,19 @@ interface RepoRow {
 
 const STORAGE_KEY = "osm-admin-token";
 
+function isAuthError(e: unknown): boolean {
+  if (!(e instanceof Error)) return false;
+  const m = e.message.toLowerCase();
+  return (
+    m.includes("admin token") ||
+    m.includes("expired") ||
+    m.includes("invalid token") ||
+    m.includes("not authenticated") ||
+    m.includes("unauthorized") ||
+    m.startsWith("401")
+  );
+}
+
 function fmtDate(iso: string | null): string {
   if (!iso) return "—";
   const d = new Date(iso);
@@ -193,12 +206,15 @@ function LoginCard({ onLoggedIn }: { onLoggedIn: (token: string) => void }) {
 
 // ─── Overview tab ─────────────────────────────────────────────────────────────
 
-function OverviewTab({ token }: { token: string }) {
+function OverviewTab({ token, onAuthFail }: { token: string; onAuthFail: () => void }) {
   const [data, setData] = useState<Overview | null>(null);
   const [err, setErr] = useState<string | null>(null);
   useEffect(() => {
-    api.adminOverview(token).then(setData).catch((e: Error) => setErr(e.message));
-  }, [token]);
+    api.adminOverview(token).then(setData).catch((e: Error) => {
+      if (isAuthError(e)) { onAuthFail(); return; }
+      setErr(e.message);
+    });
+  }, [token, onAuthFail]);
   if (err) return <ErrorCard message={err} />;
   if (!data) return <LoadingRow />;
   return (
@@ -280,7 +296,7 @@ function ErrorCard({ message }: { message: string }) {
 
 // ─── Users tab ────────────────────────────────────────────────────────────────
 
-function UsersTab({ token }: { token: string }) {
+function UsersTab({ token, onAuthFail }: { token: string; onAuthFail: () => void }) {
   const [q, setQ] = useState("");
   const [rows, setRows] = useState<UserRow[]>([]);
   const [total, setTotal] = useState(0);
@@ -295,9 +311,12 @@ function UsersTab({ token }: { token: string }) {
     try {
       const r = await api.adminUsers(token, query, limit, off);
       setRows(r.items); setTotal(r.total); setOffset(off);
-    } catch (e) { setErr(e instanceof Error ? e.message : "Failed"); }
+    } catch (e) {
+      if (isAuthError(e)) { onAuthFail(); return; }
+      setErr(e instanceof Error ? e.message : "Failed");
+    }
     finally { setLoading(false); }
-  }, [token, q]);
+  }, [token, q, onAuthFail]);
 
   useEffect(() => { load(0, ""); }, [load]);
 
@@ -356,7 +375,7 @@ function UsersTab({ token }: { token: string }) {
 
       <Pagination total={total} limit={limit} offset={offset} onChange={(o) => load(o, q)} />
 
-      {selected && <UserDetailDrawer token={token} userId={selected.id} onClose={() => setSelected(null)} />}
+      {selected && <UserDetailDrawer token={token} userId={selected.id} onClose={() => setSelected(null)} onAuthFail={onAuthFail} />}
     </div>
   );
 }
@@ -390,7 +409,7 @@ function Pagination({ total, limit, offset, onChange }: { total: number; limit: 
 
 // ─── User detail drawer ──────────────────────────────────────────────────────
 
-function UserDetailDrawer({ token, userId, onClose }: { token: string; userId: number; onClose: () => void }) {
+function UserDetailDrawer({ token, userId, onClose, onAuthFail }: { token: string; userId: number; onClose: () => void; onAuthFail: () => void }) {
   interface UserDetail {
     user: UserRow;
     analyses: AnalysisRow[];
@@ -401,8 +420,11 @@ function UserDetailDrawer({ token, userId, onClose }: { token: string; userId: n
   const [d, setD] = useState<UserDetail | null>(null);
   const [err, setErr] = useState<string | null>(null);
   useEffect(() => {
-    api.adminUser(userId, token).then(setD).catch((e: Error) => setErr(e.message));
-  }, [token, userId]);
+    api.adminUser(userId, token).then(setD).catch((e: Error) => {
+      if (isAuthError(e)) { onAuthFail(); return; }
+      setErr(e.message);
+    });
+  }, [token, userId, onAuthFail]);
 
   return (
     <div className="fixed inset-0 z-50 flex">
@@ -528,7 +550,7 @@ function KV({ k, v, link }: { k: string; v: string | null | undefined; link?: bo
 
 // ─── Analyses tab ─────────────────────────────────────────────────────────────
 
-function AnalysesTab({ token }: { token: string }) {
+function AnalysesTab({ token, onAuthFail }: { token: string; onAuthFail: () => void }) {
   const [q, setQ] = useState("");
   const [statusF, setStatusF] = useState("");
   const [rows, setRows] = useState<AnalysisRow[]>([]);
@@ -544,9 +566,12 @@ function AnalysesTab({ token }: { token: string }) {
     try {
       const r = await api.adminAnalyses(token, query, status, limit, off);
       setRows(r.items); setTotal(r.total); setOffset(off);
-    } catch (e) { setErr(e instanceof Error ? e.message : "Failed"); }
+    } catch (e) {
+      if (isAuthError(e)) { onAuthFail(); return; }
+      setErr(e instanceof Error ? e.message : "Failed");
+    }
     finally { setLoading(false); }
-  }, [token, q, statusF]);
+  }, [token, q, statusF, onAuthFail]);
 
   useEffect(() => { load(0); }, [load]);
 
@@ -604,14 +629,14 @@ function AnalysesTab({ token }: { token: string }) {
       )}
 
       <Pagination total={total} limit={limit} offset={offset} onChange={(o) => load(o, q, statusF)} />
-      {selectedId && <AnalysisDetailDrawer token={token} analysisId={selectedId} onClose={() => setSelectedId(null)} />}
+      {selectedId && <AnalysisDetailDrawer token={token} analysisId={selectedId} onClose={() => setSelectedId(null)} onAuthFail={onAuthFail} />}
     </div>
   );
 }
 
 // ─── Analysis detail drawer ──────────────────────────────────────────────────
 
-function AnalysisDetailDrawer({ token, analysisId, onClose }: { token: string; analysisId: number; onClose: () => void }) {
+function AnalysisDetailDrawer({ token, analysisId, onClose, onAuthFail }: { token: string; analysisId: number; onClose: () => void; onAuthFail: () => void }) {
   interface AnalysisDetail extends AnalysisRow {
     user: UserRow | null;
     issue_body: string | null;
@@ -631,8 +656,11 @@ function AnalysisDetailDrawer({ token, analysisId, onClose }: { token: string; a
   const [d, setD] = useState<AnalysisDetail | null>(null);
   const [err, setErr] = useState<string | null>(null);
   useEffect(() => {
-    api.adminAnalysis(analysisId, token).then(setD).catch((e: Error) => setErr(e.message));
-  }, [token, analysisId]);
+    api.adminAnalysis(analysisId, token).then(setD).catch((e: Error) => {
+      if (isAuthError(e)) { onAuthFail(); return; }
+      setErr(e.message);
+    });
+  }, [token, analysisId, onAuthFail]);
 
   return (
     <div className="fixed inset-0 z-50 flex">
@@ -752,12 +780,15 @@ function Pre({ children }: { children: React.ReactNode }) {
 
 // ─── Repos tab ───────────────────────────────────────────────────────────────
 
-function ReposTab({ token }: { token: string }) {
+function ReposTab({ token, onAuthFail }: { token: string; onAuthFail: () => void }) {
   const [rows, setRows] = useState<RepoRow[]>([]);
   const [err, setErr] = useState<string | null>(null);
   useEffect(() => {
-    api.adminRepos(token).then((r) => setRows(r.items)).catch((e: Error) => setErr(e.message));
-  }, [token]);
+    api.adminRepos(token).then((r) => setRows(r.items)).catch((e: Error) => {
+      if (isAuthError(e)) { onAuthFail(); return; }
+      setErr(e.message);
+    });
+  }, [token, onAuthFail]);
   if (err) return <ErrorCard message={err} />;
   if (rows.length === 0) return <p className="text-sm text-muted-foreground py-6 text-center">No repos analyzed yet.</p>;
   return (
@@ -791,7 +822,7 @@ function ReposTab({ token }: { token: string }) {
 
 // ─── Contributions tab ───────────────────────────────────────────────────────
 
-function ContributionsTab({ token }: { token: string }) {
+function ContributionsTab({ token, onAuthFail }: { token: string; onAuthFail: () => void }) {
   const [statusF, setStatusF] = useState("");
   const [rows, setRows] = useState<ContributionRow[]>([]);
   const [total, setTotal] = useState(0);
@@ -805,9 +836,12 @@ function ContributionsTab({ token }: { token: string }) {
     try {
       const r = await api.adminContributions(token, status, limit, off);
       setRows(r.items); setTotal(r.total); setOffset(off);
-    } catch (e) { setErr(e instanceof Error ? e.message : "Failed"); }
+    } catch (e) {
+      if (isAuthError(e)) { onAuthFail(); return; }
+      setErr(e instanceof Error ? e.message : "Failed");
+    }
     finally { setLoading(false); }
-  }, [token, statusF]);
+  }, [token, statusF, onAuthFail]);
 
   useEffect(() => { load(0); }, [load]);
 
@@ -884,10 +918,10 @@ export default function AdminPanel() {
     localStorage.setItem(STORAGE_KEY, t);
     setToken(t);
   };
-  const logout = () => {
+  const logout = useCallback(() => {
     localStorage.removeItem(STORAGE_KEY);
     setToken(null);
-  };
+  }, []);
 
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = useMemo(() => [
     { id: "overview", label: "Overview", icon: <FiActivity size={13} /> },
@@ -936,11 +970,11 @@ export default function AdminPanel() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-        {tab === "overview" && <OverviewTab token={token} />}
-        {tab === "users" && <UsersTab token={token} />}
-        {tab === "analyses" && <AnalysesTab token={token} />}
-        {tab === "repos" && <ReposTab token={token} />}
-        {tab === "contributions" && <ContributionsTab token={token} />}
+        {tab === "overview" && <OverviewTab token={token} onAuthFail={logout} />}
+        {tab === "users" && <UsersTab token={token} onAuthFail={logout} />}
+        {tab === "analyses" && <AnalysesTab token={token} onAuthFail={logout} />}
+        {tab === "repos" && <ReposTab token={token} onAuthFail={logout} />}
+        {tab === "contributions" && <ContributionsTab token={token} onAuthFail={logout} />}
       </main>
     </div>
   );
